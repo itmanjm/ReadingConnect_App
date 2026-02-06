@@ -1,0 +1,91 @@
+# Model Selection Preferences
+
+> Configuration for AI model choices across different use cases.
+> This file can be overridden by workspace or per-session settings.
+
+---
+
+## Primary Model
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Provider | openai | openai, anthropic, cohere, google, local |
+| Model | gpt-4o-mini | gpt-4o, gpt-4-turbo, gpt-3.5-turbo |
+| Reason | default, cost, speed, quality |
+
+**Default Configuration:**
+```yaml
+primary:
+  provider: openai
+  model: gpt-4o-mini
+  reason: default
+```
+
+---
+
+## Alternative Models
+
+| Provider | Recommended Models | Use Case |
+|----------|-------------------|----------|
+| openai | gpt-4o, gpt-4-turbo, gpt-3.5-turbo | Coding, reasoning, analysis |
+| anthropic | claude-3-5-sonnet, claude-3-opus, claude-3-haiku | Writing, analysis, coding |
+| cohere | command-r-plus, command-r, command | Quick tasks, business |
+| google | gemini-pro, gemini-1.5-flash | Free, basic queries |
+| local | llama-3.2, mistral-7b | Privacy, offline, fast |
+
+---
+
+## Model Failover
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Enabled | true | true, false |
+| Strategy | round-robin | round-robin, fallback, priority |
+| Cooldown | 60s | 30s, 60s, 120s, 300s |
+
+**Default Configuration:**
+```yaml
+failover:
+  enabled: true
+  strategy: round-robin
+  cooldown: 60s
+  
+  models:
+    - provider: openai
+      model: gpt-4o-mini
+      reason: default
+      priority: 100
+    
+    - provider: anthropic
+      model: claude-3.5-sonnet
+      reason: backup
+      priority: 90
+```
+
+---
+
+## Specialized Models
+
+| Use Case | Recommended Model | Reason |
+|-----------|-------------------|--------|
+| Coding | claude-3.5-sonnet | Better for code, follows instructions |
+| Writing | claude-3-opus | Long context, nuanced tone |
+| Summarization | gpt-4o-turbo | Fast, good compression |
+| Research | claude-3-haiku | Analytical, careful reasoning |
+| Image | gpt-4o | Vision capabilities |
+| Voice | elevenlabs-multilingual-v2 | Natural speech (external) |
+
+---
+
+## Cost Optimization
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Budget Monitoring | false | true, false |
+| Cache Strategy | none | simple, aggressive, adaptive |
+| Token Limits | none | 1M, 10M, 100M |
+
+---
+
+*Last updated: 2026-02-04*
+*Use this file to optimize model selection based on cost, speed, and quality requirements.*

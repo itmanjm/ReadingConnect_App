@@ -1,0 +1,34 @@
+# args/messaging.yaml
+#
+# Configuration for Telegram messaging gateway.
+# Environment variables: ${TELEGRAM_BOT_TOKEN}, ${OPENAI_API_KEY}
+
+telegram:
+  bot_token: ${TELEGRAM_BOT_TOKEN}
+  webhook_url: ${TELEGRAM_WEBHOOK_URL}  # Optional
+  allowed_users: []  # Empty = all users, or specific Telegram IDs
+  allowed_groups: []  # Empty = all groups, or specific group IDs
+  rate_limit:
+    requests_per_minute: 20
+    burst_size: 5
+  features:
+    receive_messages: true
+    send_messages: true
+    bot_commands: true
+    webhooks: false  # Webhook mode requires HTTPS
+  logging:
+    level: info  # debug, info, warn, error
+    file: /tmp/messaging-gateway.log
+
+openai:
+  api_key: ${OPENAI_API_KEY}
+  model: gpt-4o-mini
+  max_tokens: 1000
+  context_entries: 50  # Number of memory entries to include in context
+
+zai:
+  api_key: ${ZAI_API_KEY}
+  base_url: ${ZAI_BASE_URL}
+  model: glm-4.7
+  max_tokens: 1000
+  context_entries: 50  # Number of memory entries to include in context

@@ -1,0 +1,88 @@
+# Default Behavior Settings
+
+> Core behavior configuration for the Atlas/GOTCHA framework.
+> These defaults apply when no specific args file is loaded.
+
+---
+
+## Communication Style
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Voice | direct | direct, professional, casual, friendly |
+| Format | markdown | markdown, json, html |
+| Length | concise | concise, verbose, full |
+| Updates | minimal | minimal, standard, detailed |
+
+---
+
+## Task Execution
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Verification | evidence | evidence, skip |
+| Testing | level | off, basic, standard, thorough |
+| Parallelism | mode | sequential, parallel, unlimited |
+
+---
+
+## Quality Standards
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Type Safety | strict | strict, moderate, lenient |
+| Error Handling | fail-fast | fail-fast, continue-on-error, stop-on-error |
+| Documentation | level | minimal, standard, comprehensive |
+
+---
+
+## Memory Behavior
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Auto-recall | false | true, false |
+| Embedding Model | text-embedding-3-small | openai, anthropic, cohere, local |
+| Search Mode | hybrid | keyword, semantic, hybrid |
+
+---
+
+## Tool Preferences
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Tool Discovery | manifest | manifest, auto, mcp |
+| Tool Timeout | 30s | 10s, 30s, 60s, 120s |
+
+---
+
+## Workflow Defaults
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Goal Enforcement | manual | manual, auto, warn, strict |
+| Context Loading | auto | auto, manual, ask |
+
+---
+
+## Debug Mode
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Debug | false | true, false |
+| Verbose | false | true, false |
+| Log Level | info | debug, info, warn, error |
+
+---
+
+## Override Behavior
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Args Priority | high | high, medium, low |
+| Context Priority | high | high, medium, low |
+| Hard Prompt Priority | high | high, medium, low |
+
+---
+
+*Last updated: 2026-02-04*
+*Use this file as fallback when no specific args are configured.*

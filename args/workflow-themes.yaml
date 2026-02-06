@@ -1,0 +1,160 @@
+# Workflow Themes & Frameworks
+
+> Configuration for daily themes, frameworks, and working modes.
+> This file can be overridden by workspace or per-session settings.
+
+---
+
+## Daily Themes
+
+| Theme | Description | Status |
+|--------|-------------|--------|
+| build-app | Full ATLAS workflow with validation | Active |
+| research | Discovery and analysis workflows | Inactive |
+| content-create | Blog posts, documentation, marketing copy | Inactive |
+| automation | Cron jobs, webhooks, scheduled tasks | Inactive |
+| debug | Debugging and troubleshooting workflows | Inactive |
+| maintenance | System updates, migrations, cleanup | Inactive |
+
+**Default Configuration:**
+```yaml
+daily_theme: build-app
+```
+
+---
+
+## Framework Selection
+
+| Framework | Description | Status |
+|-----------|-------------|--------|
+| GOTCHA | 6-layer architecture for agentic systems | Active |
+| ATLAS | 5-step app building process | Active |
+| MVP | Minimum viable product approach | Inactive |
+
+**Default Configuration:**
+```yaml
+framework: gotcha
+
+workflow_strategy:
+  default: atlas
+  fallback: mvp
+  
+  atlus:
+    phases:
+      - architect
+      - trace
+      - link
+      - assemble
+      - stress_test
+    validation: optional
+    stress: optional
+    monitoring: optional
+    
+  mvp:
+    phases:
+      - identify_problem
+      - build_mvp
+      - validate
+    skip_trace: true
+    skip_link: true
+    skip_assemble: true
+```
+
+---
+
+## Context Prioritization
+
+| Context Type | Priority | Loading Strategy |
+|--------------|-----------|-------------------|
+| ICP | High | Load automatically at session start |
+| Domain Knowledge | High | Load automatically at session start |
+| Examples | Medium | Load on-demand via context/examples/ |
+| Writing Samples | Low | Load on-demand via context/examples/ |
+| Research Findings | Medium | Load on-demand from memory |
+
+**Default Configuration:**
+```yaml
+context_priority:
+  icp: high
+  domain_knowledge: high
+  examples: medium
+  writing_samples: low
+  research_findings: medium
+```
+
+---
+
+## Working Modes
+
+| Mode | Description | Activation |
+|--------|-------------|------------|
+| normal | Standard operation with full features | Always active |
+| focused | Single-task focus, reduced context | Explicit activation |
+| batch | Process multiple tasks without interaction | Explicit activation |
+| offline | Work without external dependencies | Explicit activation |
+| presentation | Output for reviews/demos | Explicit activation |
+
+**Default Configuration:**
+```yaml
+working_mode: normal
+```
+
+---
+
+## Daily Cadence
+
+| Day | Focus | Description |
+|------|-------|-------------|
+| Monday | Planning | Weekly priorities, schedule review |
+| Tuesday | Building | Deep work, feature development |
+| Wednesday | Review | Mid-week check-in, course correction |
+| Thursday | Delivery | Feature completion, testing, deployment |
+| Friday | Wrap-up | Weekly review, documentation, planning |
+
+**Default Configuration:**
+```yaml
+daily_cadence: planning
+```
+
+---
+
+## Output Formats
+
+| Type | Format | Default |
+|------|-------|----------|
+| Code | markdown | markdown, code-block, html |
+| Documentation | markdown | markdown, html, pdf |
+| Data | json | json, csv, yaml |
+| Reports | markdown | markdown, html, pdf |
+
+**Default Configuration:**
+```yaml
+output_format:
+  code: markdown
+  documentation: markdown
+  data: json
+  reports: markdown
+```
+
+---
+
+## Innovation Budget
+
+| Setting | Default | Options |
+|----------|---------|----------|
+| Enabled | false | true, false |
+| Risk Tolerance | medium | low, medium, high |
+| Experimentation | off | on, limited |
+
+**Default Configuration:**
+```yaml
+innovation:
+  enabled: false
+  risk_tolerance: medium
+  experimentation: off
+```
+
+---
+
+*Last updated: 2026-02-04*
+*Use this file to adapt behavior for different contexts, priorities, and goals.*
