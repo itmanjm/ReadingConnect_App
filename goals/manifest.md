@@ -1,0 +1,15 @@
+# Goals Manifest
+
+> Index of available goal workflows.
+> This is the first place to check when starting a task.
+
+| Goal | Description | Status |
+|------|-------------|--------|
+| build_app | Build full-stack apps using ATLAS 5-step workflow (Architect, Trace, Link, Assemble, Stress-test) | Active |
+| youtube_monitoring | Monitor 23 YouTube channels for insights (Jack Roberts ecosystem, AI tools, fitness, marriage) | Active |
+| content_automation | Automate content creation using AI tools (OpenClaw, Cursor, local models) | Active |
+| business_automation | Automate SkoConnect business workflows (customer support, analytics, onboarding) | Active |
+| fitness_tracking | Track fitness journeys and workout channels (WORKOUT, Fitness Tutorial) | Active |
+| memory_automation | Automate recall of dates, milestones, and relationships using memory system | Active |
+
+*Last updated: 2026-02-04*
