@@ -1,0 +1,397 @@
+# Literacy Learning App — Args Configuration
+
+> Behavior settings for ReadinConnect App
+> Change these values without modifying goals or tools
+
+---
+
+## Environment
+
+```yaml
+development:
+  node_version: "18.x"
+  package_manager: "npm"
+  app_name: "readinConnect"
+  display_name: "ReadinConnect"
+
+supabase:
+  project_url: "${SUPABASE_PROJECT_URL}"
+  anon_key: "${SUPABASE_ANON_KEY}"
+  service_role_key: "${SUPABASE_SERVICE_ROLE_KEY}"
+  region: "us-east-1"
+```
+
+---
+
+## Features
+
+```yaml
+enabled_features:
+  phonics_activities: true
+  sight_word_bingo: true
+  fluency_tracking: true
+  comprehension_quizzes: true
+  vocabulary_builder: true
+  gamification: true
+  printables: true
+  offline_support: true
+  teacher_dashboard: true
+  parent_portal: true
+  audio_tts: true
+  audio_stt: false  # Speech-to-text is advanced; enable later
+
+disabled_features:
+  - social_sharing  # Privacy for children
+  - third_party_analytics  # Use PostHog only if needed
+```
+
+---
+
+## Configuration
+
+```yaml
+app:
+  title: "ReadinConnect"
+  tagline: "Building Strong Readers, One Word at a Time"
+  primary_color: "#6366f1"  # Indigo-500
+  secondary_color: "#ec4899"  # Pink-500
+  font_family: "system-ui, sans-serif"
+
+age_ranges:
+  - label: "4-5 years"
+    value: "4-5"
+    icon: "baby"
+  - label: "6-7 years"
+    value: "6-7"
+    icon: "child"
+  - label: "8+ years"
+    value: "8+"
+    icon: "user"
+
+reading_levels:
+  - level: "pre-reader"
+    label: "Pre-Reader"
+    description: "Just starting out"
+    color: "#eab308"
+  - level: "beginner"
+    label: "Beginner"
+    description: "Learning letters and sounds"
+    color: "#22c55e"
+  - level: "intermediate"
+    label: "Intermediate"
+    description: "Reading simple words"
+    color: "#3b82f6"
+  - level: "advanced"
+    label: "Advanced"
+    description: "Reading independently"
+    color: "#a855f7"
+
+skill_areas:
+  - type: "letter_recognition"
+    label: "Letter Recognition"
+    icon: "Aa"
+    max_level: 10
+  - type: "phonemic_awareness"
+    label: "Phonemic Awareness"
+    icon: "Volume2"
+    max_level: 10
+  - type: "phonics"
+    label: "Phonics"
+    icon: "Book"
+    max_level: 10
+  - type: "sight_words"
+    label: "Sight Words"
+    icon: "Type"
+    max_level: 10
+  - type: "fluency"
+    label: "Fluency"
+    icon: "Zap"
+    max_level: 10
+  - type: "comprehension"
+    label: "Comprehension"
+    icon: "Brain"
+    max_level: 10
+  - type: "writing"
+    label: "Writing"
+    icon: "PenTool"
+    max_level: 10
+  - type: "engagement"
+    label: "Engagement"
+    icon: "Heart"
+    max_level: 10
+```
+
+---
+
+## Gamification
+
+```yaml
+badges:
+  milestone_badges:
+    - name: "First Steps"
+      description: "Complete your first activity"
+      criteria:
+        activity_count: 1
+      points: 10
+      icon: "footprints"
+
+    - name: "Getting Started"
+      description: "Complete 5 activities"
+      criteria:
+        activity_count: 5
+      points: 25
+      icon: "rocket"
+
+    - name: "Dedicated Reader"
+      description: "Complete 25 activities"
+      criteria:
+        activity_count: 25
+      points: 100
+      icon: "star"
+
+  skill_badges:
+    - name: "Alphabet Master"
+      description: "Recognize all 26 letters"
+      criteria:
+        skill_type: "letter_recognition"
+        target_level: 10
+      points: 75
+      icon: "graduation-cap"
+
+    - name: "Sight Word Star"
+      description: "Master 20 sight words"
+      criteria:
+        skill_type: "sight_words"
+        target_count: 20
+      points: 50
+      icon: "sparkles"
+
+    - name: "Phonics Pro"
+      description: "Master phonics sounds"
+      criteria:
+        skill_type: "phonics"
+        target_level: 8
+      points: 75
+      icon: "volume-2"
+
+    - name: "Reading Champion"
+      description: "Read 100 words per minute"
+      criteria:
+        skill_type: "fluency"
+        target_wpm: 100
+      points: 150
+      icon: "zap"
+
+  streak_badges:
+    - name: "Day Warrior"
+      description: "Use app for 3 days in a row"
+      criteria:
+        day_streak: 3
+      points: 50
+      icon: "flame"
+
+    - name: "Week Warrior"
+      description: "Use app for 7 days in a row"
+      criteria:
+        day_streak: 7
+      points: 200
+      icon: "trophy"
+
+  engagement_badges:
+    - name: "Bookworm"
+      description: "Read 10 stories"
+      criteria:
+        stories_read: 10
+      points: 75
+      icon: "book"
+
+    - name: "Quiz Master"
+      description: "Score 90%+ on 5 quizzes"
+      criteria:
+        quizzes_mastered: 5
+        min_score: 90
+      points: 100
+      icon: "target"
+
+points:
+  per_activity_completion: 5
+  per_sight_word_mastered: 3
+  per_quiz_correct_answer: 1
+  per_day_active: 2
+  per_week_goal_met: 20
+```
+
+---
+
+## Activities
+
+```yaml
+activity_types:
+  phonemic_awareness:
+    label: "Phonemic Awareness"
+    description: "Learn to hear and manipulate sounds in words"
+    icon: "volume-2"
+    examples:
+      - "Rhyming songs"
+      - "Sound Detective"
+      - "Clapping syllables"
+
+  phonics:
+    label: "Phonics"
+    description: "Learn letters and their sounds"
+    icon: "book-open"
+    examples:
+      - "Letter hunt"
+      - "Magnetic letter word building"
+      - "Sound hopscotch"
+
+  sight_words:
+    label: "Sight Words"
+    description: "Recognize high-frequency words instantly"
+    icon: "type"
+    examples:
+      - "Sight Word Bingo"
+      - "Flashlight Tag"
+      - "Word wall games"
+
+  vocabulary:
+    label: "Vocabulary"
+    description: "Build understanding of word meanings"
+    icon: "lightbulb"
+    examples:
+      - "Word of the Day"
+      - "Labeling games"
+      - "Picture dictionaries"
+
+  fluency:
+    label: "Fluency"
+    description: "Read smoothly and with expression"
+    icon: "zap"
+    examples:
+      - "Partner reading"
+      - "Echo reading"
+      - "Timed reading practice"
+
+  comprehension:
+    label: "Comprehension"
+    description: "Understand what you read"
+    icon: "brain"
+    examples:
+      - "Story retelling"
+      - "Question cards"
+      - "Drawing sequence"
+
+  enjoyment:
+    label: "Reading Enjoyment"
+    description: "Discover joy of reading"
+    icon: "heart"
+    examples:
+      - "Book Corner"
+      - "Reading challenges"
+      - "Story dramatization"
+
+difficulty_levels:
+  - value: "easy"
+    label: "Easy"
+    color: "green"
+    description: "Perfect for beginners"
+  - value: "medium"
+    label: "Medium"
+    color: "yellow"
+    description: "Builds on skills"
+  - value: "hard"
+    label: "Hard"
+    color: "red"
+    description: "Challenge yourself"
+```
+
+---
+
+## Constraints
+
+```yaml
+activity_limits:
+  min_duration_minutes: 3
+  max_duration_minutes: 30
+  recommended_daily_activities: 3
+  max_daily_activities: 10
+
+classroom_settings:
+  max_students_per_teacher: 50
+  max_students_per_classroom: 25
+
+file_constraints:
+  max_audio_file_size_mb: 10
+  max_recording_duration_seconds: 120
+  pdf_page_limit: 20
+
+privacy:
+  minimum_age: 4
+  require_parental_consent: true
+  data_retention_days: 365
+  anonymous_analytics_only: true
+```
+
+---
+
+## Offline Support
+
+```yaml
+offline:
+  enabled: true
+  cache_activities_count: 10
+  cache_audio_files: true
+  sync_on_reconnect: true
+  auto_cache_duration_hours: 24
+
+indexeddb:
+  database_name: "readinConnect-db"
+  version: 1
+  stores:
+    - "activities"
+    - "progress"
+    - "sight_words"
+    - "audio"
+```
+
+---
+
+## Accessibility
+
+```yaml
+accessibility:
+  wcag_level: "AA"
+  high_contrast_mode: true
+  keyboard_navigation: true
+  screen_reader_support: true
+  touch_target_size: 44  # pixels (WCAG recommended)
+  reduce_motion_preference: true
+  caption_all_audio: true
+
+font_sizes:
+  base: 16  # pixels
+  scale: [0.875, 1, 1.125, 1.25, 1.5]
+  large_text_mode: 1.5  # 150%
+```
+
+---
+
+## Development Settings
+
+```yaml
+dev:
+  auto_migrations: true
+  seed_sample_data: true
+  enable_debug_logs: true
+  hot_reload: true
+
+testing:
+  test_user_accounts: true
+  mock_supabase: false  # Set to true for offline testing
+  test_data_file: "tools/database/test_data.json"
+```
+
+---
+
+*Created: 2026-02-07*
+*Status: Active*

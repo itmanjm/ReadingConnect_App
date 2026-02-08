@@ -55,3 +55,4 @@ firebase-debug.log
 # Memory databases (if you want to keep them)
 # Uncomment to track databases
 # data/*.db
+*.tar.gz

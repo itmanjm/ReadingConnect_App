@@ -1,0 +1,12 @@
+# Dependencies for Telegram Messaging Gateway
+# Install with: pip3 install -r tools/messaging/requirements.txt
+
+# Telegram Bot API library
+python-telegram-bot>=20.0
+
+# YAML configuration parsing
+PyYAML>=6.0
+
+# Optional: OpenAI integration for AI responses
+# Uncomment if you want AI-powered responses:
+# openai>=1.0.0
