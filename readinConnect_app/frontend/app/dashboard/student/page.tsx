@@ -3,13 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
-import { useSound } from '@/lib/providers/SoundProvider'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Volume2, VolumeX, Star, Zap, TrendingUp, LogOut, Home } from 'lucide-react'
+import { Zap, Star, LogOut } from 'lucide-react'
 import Link from 'next/link'
 
 export default function StudentDashboard() {
@@ -17,7 +14,8 @@ export default function StudentDashboard() {
   const user = useAuthStore((state) => state.user)
   const profile = useAuthStore((state) => state.profile)
   const signOut = useAuthStore((state) => state.signOut)
-  const { isMuted, toggleMute, playClick, playHover, playNavigate } = useSound()
+  const setUser = useAuthStore((state) => state.setUser)
+  const setProfile = useAuthStore((state) => state.setProfile)
 
   const [totalPoints, setTotalPoints] = useState(0)
   const [completedActivities, setCompletedActivities] = useState(0)
@@ -30,42 +28,21 @@ export default function StudentDashboard() {
       return
     }
 
-    if (user.id) {
-      loadStudentData()
-    }
+    loadStudentData()
   }, [user, profile, router])
 
   const loadStudentData = async () => {
-    if (!user?.id) return
-
-    const supabase = createClient()
-
-    const [pointsResult, completionsResult, badgesResult] = await Promise.all([
-      supabase.rpc('get_student_total_points', { student_id: user.id }),
-      supabase
-        .from('activity_completions')
-        .select('id', { count: 'exact' })
-        .eq('student_id', user.id),
-      supabase
-        .from('earned_badges')
-        .select('id', { count: 'exact' })
-        .eq('student_id', user.id),
-    ])
-
-    setTotalPoints(pointsResult.data || 0)
-    setCompletedActivities(completionsResult.count || 0)
-    setEarnedBadges(badgesResult.count || 0)
+    setTotalPoints(0)
+    setCompletedActivities(0)
+    setEarnedBadges(0)
     setLoading(false)
   }
 
   const handleSignOut = async () => {
-    playClick()
     await signOut()
-    router.push('/')
-  }
-
-  const handleGameClick = () => {
-    playNavigate()
+    setUser(null)
+    setProfile(null)
+    router.push('/auth/login')
   }
 
   if (loading) {
@@ -87,23 +64,13 @@ export default function StudentDashboard() {
             <span className="text-xl font-black text-[#5A4A42]">Reading</span>
           </div>
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleMute}
-              onMouseEnter={playHover}
-              className="rounded-full border-[#FF6B6B]/30 text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white w-10 h-10 p-0"
-            >
-              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-            </Button>
             <span className="text-sm font-medium text-[#8B7355]">
-              {profile?.full_name?.split(' ')[0] || 'Reader'}
+              {profile?.displayName?.split(' ')[0] || 'Reader'}
             </span>
             <Button
               variant="outline"
               size="sm"
               onClick={handleSignOut}
-              onMouseEnter={playHover}
               className="rounded-full border-[#FF6B6B]/30 text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white"
             >
               <LogOut className="h-4 w-4 mr-2" />
@@ -118,10 +85,10 @@ export default function StudentDashboard() {
           <div className="inline-flex items-center gap-2 bg-white rounded-full px-6 py-3 shadow-lg shadow-[#FFE5B4]/20 mb-4">
             <span className="text-2xl">👋</span>
             <h1 className="text-2xl font-black text-[#5A4A42]">
-              Hi, {profile?.full_name?.split(' ')[0] || 'Super Reader'}!
+              Hi, {profile?.displayName?.split(' ')[0] || 'Super Reader'}!
             </h1>
           </div>
-          <p className="text-[#8B7355] text-lg">Ready for today's adventures?</p>
+          <p className="text-[#8B7355] text-lg">Ready for today&apos;s adventures?</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-3 mb-8">
@@ -151,7 +118,7 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent>
               <CardTitle className="text-[#5A4A42] text-lg">Games Played</CardTitle>
-              <p className="text-sm text-[#8B7355]">You're doing great!</p>
+              <p className="text-sm text-[#8B7355]">You&apos;re doing great!</p>
             </CardContent>
           </Card>
 
@@ -180,7 +147,7 @@ export default function StudentDashboard() {
                 </div>
                 <div>
                   <CardTitle className="text-[#5A4A42] text-xl">Your Powers</CardTitle>
-                  <p className="text-sm text-[#8B7355]">See how strong you're getting!</p>
+                  <p className="text-sm text-[#8B7355]">See how strong you&apos;re getting!</p>
                 </div>
               </div>
             </CardHeader>
@@ -224,11 +191,8 @@ export default function StudentDashboard() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3 pt-6">
-              <Link href="/activities/phonics" onClick={handleGameClick}>
-                <div 
-                  className="flex items-center justify-between p-4 bg-[#FFB5BA]/10 rounded-2xl hover:bg-[#FFB5BA]/20 cursor-pointer transition-all group"
-                  onMouseEnter={playHover}
-                >
+              <Link href="/activities/phonics">
+                <div className="flex items-center justify-between p-4 bg-[#FFB5BA]/10 rounded-2xl hover:bg-[#FFB5BA]/20 cursor-pointer transition-all group">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#FFB5BA] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                       <span className="text-2xl">🎯</span>
@@ -244,11 +208,8 @@ export default function StudentDashboard() {
                 </div>
               </Link>
 
-              <Link href="/activities/sight-words" onClick={handleGameClick}>
-                <div 
-                  className="flex items-center justify-between p-4 bg-[#B8E0D2]/10 rounded-2xl hover:bg-[#B8E0D2]/20 cursor-pointer transition-all group"
-                  onMouseEnter={playHover}
-                >
+              <Link href="/activities/sight-words">
+                <div className="flex items-center justify-between p-4 bg-[#B8E0D2]/10 rounded-2xl hover:bg-[#B8E0D2]/20 cursor-pointer transition-all group">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#B8E0D2] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                       <span className="text-2xl">🎉</span>
@@ -264,11 +225,8 @@ export default function StudentDashboard() {
                 </div>
               </Link>
 
-              <Link href="/activities/fluency" onClick={handleGameClick}>
-                <div 
-                  className="flex items-center justify-between p-4 bg-[#FFE5B4]/10 rounded-2xl hover:bg-[#FFE5B4]/20 cursor-pointer transition-all group"
-                  onMouseEnter={playHover}
-                >
+              <Link href="/activities/fluency">
+                <div className="flex items-center justify-between p-4 bg-[#FFE5B4]/10 rounded-2xl hover:bg-[#FFE5B4]/20 cursor-pointer transition-all group">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-[#FFE5B4] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                       <span className="text-2xl">⏱️</span>
