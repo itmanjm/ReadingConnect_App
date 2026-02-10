@@ -14,8 +14,6 @@ export default function StudentDashboard() {
   const user = useAuthStore((state) => state.user)
   const profile = useAuthStore((state) => state.profile)
   const signOut = useAuthStore((state) => state.signOut)
-  const setUser = useAuthStore((state) => state.setUser)
-  const setProfile = useAuthStore((state) => state.setProfile)
 
   const [totalPoints, setTotalPoints] = useState(0)
   const [completedActivities, setCompletedActivities] = useState(0)
@@ -40,8 +38,6 @@ export default function StudentDashboard() {
 
   const handleSignOut = async () => {
     await signOut()
-    setUser(null)
-    setProfile(null)
     router.push('/auth/login')
   }
 

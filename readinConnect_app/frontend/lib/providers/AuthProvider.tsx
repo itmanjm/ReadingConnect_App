@@ -25,11 +25,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('AuthProvider: Listener already initialized, skipping...')
       return
     }
-    
+
     listenerInitializedRef.current = true
     console.log('AuthProvider: Setting up auth state listener...')
     setLoading(true)
-    
+
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
       console.log('AuthProvider: Auth state changed:', authUser?.email || 'No user')
       setUser(authUser)
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       listenerInitializedRef.current = false
       unsubscribe()
     }
-  }, [setUser, setLoading, setAuthError])
+  }, [])
 
   useEffect(() => {
     if (authReady && initialized) {
