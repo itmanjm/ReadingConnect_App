@@ -39,7 +39,7 @@ Use tools from `tools/` directory for:
 | Database schema setup | `tools/database/schema.sql` | Deterministic, version-controlled schema |
 | Run migrations | `tools/database/migrate.py` | Ensures consistent database state |
 | Seed test data | `tools/database/seed.py` | Reproducible test environment |
-| Validate Supabase | `tools/setup/validate_supabase.py` | Connection testing, credential verification |
+| Validate Firebase | `tools/setup/validate_firebase.py` | Connection testing, credential verification |
 | Stress test database | `tools/database/stress_test.py` | Performance validation |
 
 **Pattern:** If it's infrastructure, data, or backend → **Use Tools**

@@ -16,7 +16,7 @@ The ReadinConnect literacy learning platform frontend has been fully implemented
 - ✅ Next.js 14 project with TypeScript
 - ✅ Tailwind CSS configured with custom design system
 - ✅ shadcn/ui component library integrated
-- ✅ Supabase client setup (browser + server)
+- ✅ Firebase client setup (browser + server)
 - ✅ Zustand state management for authentication
 - ✅ Complete TypeScript types from database schema
 
@@ -129,8 +129,8 @@ readinConnect_app/frontend/
 │   ├── avatar.tsx
 │   └── progress.tsx
 ├── lib/
-│   ├── supabase/client.ts           (Browser client)
-│   ├── supabase/server.ts           (Server client)
+│   ├── firebase/client.ts           (Browser client)
+│   ├── firebase/server.ts           (Server client)
 │   ├── stores/auth.ts               (Auth store)
 │   └── utils.ts
 ├── types/
@@ -153,7 +153,7 @@ readinConnect_app/frontend/
 
 ## 🎮 What Works Now
 
-### Without Supabase Setup (UI Testing Mode)
+### Without Firebase Setup (UI Testing Mode)
 ✅ Navigate between all pages
 ✅ Play Phonics Letter Hunt game
 ✅ Play Sight Words Bingo game
@@ -164,7 +164,7 @@ readinConnect_app/frontend/
 ✅ View dashboards with mock data
 ✅ Test authentication flows (UI only)
 
-### After Supabase Setup (Full Functionality)
+### After Firebase Setup (Full Functionality)
 ⏳ User authentication with real accounts
 ⏳ Student data persistence
 ⏳ Teacher-student linking
@@ -179,16 +179,16 @@ readinConnect_app/frontend/
 
 ### Required Steps (Database Integration)
 
-1. **Setup Supabase Project**
+1. **Setup Firebase Project**
    ```
-   # Go to https://supabase.com/dashboard
+   # Go to https://firebase.com/dashboard
    # Create a new project or use existing one
    # Get Project URL and Anon Key from Settings > API
    ```
 
 2. **Import Database Schema**
    ```
-   # In Supabase dashboard > SQL Editor
+   # In Firebase dashboard > SQL Editor
    # Open: ../tools/database/schema.sql
    # Copy entire content and paste
    # Click Run button
@@ -210,7 +210,7 @@ readinConnect_app/frontend/
 
 ### Optional Enhancements (Future Work)
 
-1. **Connect Auth to Supabase**
+1. **Connect Auth to Firebase**
    - Integrate real authentication
    - Handle user sessions
    - Implement password reset
@@ -319,8 +319,8 @@ npm start
 ## ⚠️ Notes
 
 ### Current Limitation
-- App works without Supabase for UI testing
-- Database features require Supabase setup
+- App works without Firebase for UI testing
+- Database features require Firebase setup
 - See SETUP_GUIDE.md for database configuration
 
 ### LSP Warning (Harmless)
@@ -347,7 +347,7 @@ The ReadinConnect literacy learning platform is now **functionally complete** wi
 - ✅ Production-ready code quality
 
 **Ready for:**
-- Supabase database integration
+- Firebase database integration
 - Real user authentication
 - Data persistence
 - Testing with real accounts

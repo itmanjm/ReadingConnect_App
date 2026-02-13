@@ -15,7 +15,7 @@ ReadinConnect is a comprehensive literacy learning platform designed for young r
 - TypeScript
 - Tailwind CSS
 - shadcn/ui Components
-- Supabase (PostgreSQL, Auth, Storage)
+- Firebase (Firestore, Auth, Storage)
 - Zustand (State Management)
 - React Query (Server State)
 
@@ -105,7 +105,7 @@ ReadinConnect is a comprehensive literacy learning platform designed for young r
 ### Prerequisites
 - Node.js 18+ installed
 - npm or yarn package manager
-- Supabase account (free tier available)
+- Firebase account (free tier available)
 
 ### Installation Steps
 
@@ -123,18 +123,20 @@ ReadinConnect is a comprehensive literacy learning platform designed for young r
    ```bash
    # Create .env.local file
    cat > .env.local << 'EOF'
-   NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+   NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
    EOF
    ```
 
-4. **Setup Supabase database:**
-   - Go to https://supabase.com/dashboard
-   - Navigate to SQL Editor
-   - Open `../tools/database/schema.sql`
-   - Copy entire content and paste
-   - Click Run
-   - Wait for schema creation (10-30 seconds)
+4. **Setup Firebase:**
+   - Go to https://console.firebase.google.com/
+   - Create Firestore Database
+   - Create Storage buckets
+   - Import seed data from `firebase/seed/` directory
 
 5. **Start development server:**
    ```bash
@@ -171,7 +173,7 @@ readinConnect_app/frontend/
 │   ├── dashboard/               # Dashboard components
 │   └── shared/                  # Shared components
 ├── lib/                      # Utility libraries
-│   ├── supabase/              # Supabase clients
+│   ├── firebase/              # Firebase clients
 │   ├── stores/                # Zustand stores
 │   └── utils.ts               # Utility functions
 ├── types/                    # TypeScript definitions
@@ -193,7 +195,7 @@ readinConnect_app/frontend/
 
 ## 🎯 Current Limitations
 
-### Requires Supabase Setup
+### Requires Firebase Setup
 The following features need database connection:
 - User authentication with real accounts
 - Student data persistence
@@ -227,4 +229,4 @@ npm run lint         # Run ESLint
 
 *Created:* 2026-02-07
 *Version:* 1.0.0
-*Framework:* Next.js 14 + Tailwind CSS + Supabase + shadcn/ui
+*Framework:* Next.js 14 + Tailwind CSS + Firebase + shadcn/ui

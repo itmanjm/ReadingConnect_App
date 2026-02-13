@@ -1,40 +1,116 @@
-'use client'
+'use client';
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/lib/stores/auth'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Zap, Star, LogOut } from 'lucide-react'
-import Link from 'next/link'
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/stores/auth';
+import { getFirestore, collection, doc, onSnapshot } from 'firebase/firestore';
+import { app } from '@/lib/firebase/auth';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { LogOut, Zap } from 'lucide-react';
+import Link from 'next/link';
+import { BadgeCollection } from '@/components/badges/BadgeCollection';
+
+const db = getFirestore(app);
+
+interface StudentProgress {
+  words_learned: number;
+  words_mastered: number;
+  activities_completed: number;
+  current_streak: number;
+  total_minutes: number;
+}
+
+interface Activity {
+  id: string;
+  title: string;
+  type: string;
+  completed_at: string;
+}
+
+interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
 
 export default function StudentDashboard() {
-  const router = useRouter()
-  const user = useAuthStore((state) => state.user)
-  const profile = useAuthStore((state) => state.profile)
-  const signOut = useAuthStore((state) => state.signOut)
-
-  const [totalPoints, setTotalPoints] = useState(0)
-  const [completedActivities, setCompletedActivities] = useState(0)
-  const [earnedBadges, setEarnedBadges] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const router = useRouter();
+  const user = useAuthStore((state) => state.user);
+  const signOut = useAuthStore((state) => state.signOut);
+  const [progress, setProgress] = useState<StudentProgress>({
+    words_learned: 0,
+    words_mastered: 0,
+    activities_completed: 0,
+    current_streak: 0,
+    total_minutes: 0
+  });
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
+  const totalPoints = progress.words_learned * 10 + progress.words_mastered * 50 + badges.length * 100;
+  const completedActivities = progress.activities_completed;
+  const earnedBadges = badges.length;
 
   useEffect(() => {
-    if (!user || profile?.role !== 'student') {
-      router.push('/auth/login')
-      return
+    if (!user) {
+      router.push('/auth/login');
+      return;
     }
 
-    loadStudentData()
-  }, [user, profile, router])
+    setLoading(true);
 
-  const loadStudentData = async () => {
-    setTotalPoints(0)
-    setCompletedActivities(0)
-    setEarnedBadges(0)
-    setLoading(false)
-  }
+    const unsubscribeProgress = onSnapshot(
+      doc(db, 'users', user.uid, 'level_progress', user.uid),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data() as StudentProgress;
+          setProgress(data);
+        }
+      },
+      (error) => {
+        console.error('Error fetching progress:', error);
+      }
+    );
+
+    const unsubscribeBadges = onSnapshot(
+      collection(db, 'users', user.uid, 'badges'),
+      (snapshot) => {
+        const badgesData = snapshot.docs.map((doc: any) => ({
+          docId: doc.id,
+          ...doc.data() as Badge
+        }));
+        setBadges(badgesData);
+      },
+      (error) => {
+        console.error('Error fetching badges:', error);
+      }
+    );
+
+    const unsubscribeActivities = onSnapshot(
+      collection(db, 'users', user.uid, 'activities'),
+      (snapshot) => {
+        const activitiesData = snapshot.docs.map((doc: any) => ({
+          docId: doc.id,
+          ...doc.data() as Activity
+        })).slice(0, 5);
+        setRecentActivities(activitiesData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching activities:', error);
+      }
+    );
+
+    return () => {
+      unsubscribeProgress();
+      unsubscribeBadges();
+      unsubscribeActivities();
+    };
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut()
@@ -239,6 +315,10 @@ export default function StudentDashboard() {
               </Link>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="mt-8">
+          <BadgeCollection userId={user?.uid || ''} />
         </div>
       </main>
     </div>

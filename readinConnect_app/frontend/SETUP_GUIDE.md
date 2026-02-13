@@ -40,9 +40,9 @@ readinConnect_app/frontend/
 │   ├── dashboard/                  # Dashboard components
 │   └── shared/                     # Shared components
 ├── lib/
-│   ├── supabase/
-│   │   ├── client.ts               # Browser Supabase client
-│   │   └── server.ts               # Server Supabase client
+│   ├── firebase/
+│   │   ├── client.ts               # Browser Firebase client
+│   │   └── admin.ts               # Server Firebase admin client
 │   ├── stores/
 │   │   └── auth.ts                 # Authentication store
 │   └── utils.ts
@@ -60,6 +60,9 @@ readinConnect_app/frontend/
 ### Authentication System
 - [x] User registration with role selection (student, teacher, parent)
 - [x] Login page with email/password
+- [x] Google Sign-In (OAuth) on login and register pages
+- [x] Firebase Auth integration (replaces Supabase Auth)
+- [x] Firebase user sync to PostgreSQL profiles
 - [x] Role-based routing to dashboards
 - [x] Logout functionality
 - [x] Zustand store for auth state management
@@ -101,12 +104,93 @@ readinConnect_app/frontend/
 Create `.env.local` file in `readinConnect_app/frontend/`:
 
 ```bash
-# Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url_here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+# Firebase Configuration
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key_here
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_project_id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_firebase_project_id_here
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_firebase_project_id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id_here
+NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id_here
 
-# Optional: For server-side operations
-# SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+# Admin SDK (server-side only)
+FIREBASE_ADMIN_PROJECT_ID=your_firebase_project_id
+FIREBASE_ADMIN_CLIENT_EMAIL=your_service_account_email
+FIREBASE_ADMIN_PRIVATE_KEY=your_private_key
+```
+
+**To get Firebase credentials:**
+1. Go to https://console.firebase.google.com/
+2. Create a new project (or use existing)
+3. Navigate to Project Settings
+4. Scroll to "Your apps" and create a Web app
+5. Copy Firebase SDK configuration
+6. Update `.env.local` with your credentials
+7. For admin operations, go to Project Settings > Service Accounts > Generate New Private Key
+
+---
+
+### 2. Setup Firebase Project
+
+**Prerequisites:** Complete Step 1 (get Firebase credentials)
+
+1. **Create Firebase Project:**
+   - Go to https://console.firebase.google.com/
+   - Click "Add project"
+   - Enter project name: `readinconnect`
+   - Click "Create project"
+
+2. **Enable Authentication:**
+   - In Firebase Console, click "Authentication"
+   - Click "Get Started"
+   - Click "Sign-in method" tab
+   - Enable **Email/Password** provider
+   - Enable **Google** provider
+   - Click "Save" for each
+
+3. **Get Firebase Configuration:**
+   - Click Project Overview gear icon → Project Settings
+   - Scroll to "Your apps" section
+   - Click Web icon (</>)
+   - Enter app name: `ReadinConnect Frontend`
+   - Register app
+   - Copy `firebaseConfig` object values
+   - Paste into `.env.local`
+
+---
+
+### 3. Setup Firebase Database & Storage
+
+**Create Firestore Collections:**
+
+1. Go to https://console.firebase.google.com/
+2. Select your project
+3. Navigate to **Firestore Database**
+4. Create a database (start in Test Mode for development)
+5. Create collections manually or import from `firebase/seed/` directory
+
+**Create Firebase Storage:**
+
+1. Navigate to **Storage**
+2. Get Started
+3. Start in Test Mode (for development)
+4. Create folders: `audio/letters`, `audio/effects`, `audio/stories`, `images/badges`, `images/illustrations`
+
+**Set up Security Rules:**
+
+1. For Firestore: Navigate to Firestore > Rules and publish your rules
+2. For Storage: Navigate to Storage > Rules and publish your rules
+
+**Option B: Via Firebase CLI**
+
+```bash
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Login
+firebase login
+
+# Initialize
+firebase init firestore storage
 ```
 
 **To get Supabase credentials:**
@@ -116,9 +200,50 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 4. Copy your Project URL and Anon Key
 5. Paste them into `.env.local`
 
+**To get Firebase credentials:**
+1. Go to https://console.firebase.google.com/
+2. Create a new project (or use existing)
+3. Navigate to Authentication > Sign-in method
+4. Enable Email/Password and Google providers
+5. Go to Project Settings > General > Your apps
+6. Add a Web app and copy the firebaseConfig values
+7. Paste them into `.env.local`
+8. See `.sisyphus/guides/firebase-setup-guide.md` for detailed instructions
+
 ---
 
-### 2. Setup Supabase Database
+### 2. Setup Firebase Project
+
+**Prerequisites:** Complete Step 1 (get Firebase credentials)
+
+1. **Create Firebase Project:**
+   - Go to https://console.firebase.google.com/
+   - Click "Add project"
+   - Enter project name: `readinconnect`
+   - Click "Create project"
+
+2. **Enable Authentication:**
+   - In Firebase Console, click "Authentication"
+   - Click "Get Started"
+   - Click "Sign-in method" tab
+   - Enable **Email/Password** provider
+   - Enable **Google** provider
+   - Click "Save" for each
+
+3. **Get Firebase Configuration:**
+   - Click Project Overview gear icon → Project Settings
+   - Scroll to "Your apps" section
+   - Click Web icon (</>)
+   - Enter app name: `ReadinConnect Frontend`
+   - Register app
+   - Copy the `firebaseConfig` object values
+   - Paste into `.env.local`
+
+See `.sisyphus/guides/firebase-setup-guide.md` for complete step-by-step instructions.
+
+---
+
+### 3. Setup Supabase Database
 
 **Option A: Via Supabase Dashboard (Recommended)**
 
@@ -163,9 +288,9 @@ Open http://localhost:3000 in your browser.
 
 ## 🎮 How to Use
 
-### For Testing (Without Real Supabase)
+### For Testing (Without Real Firebase)
 
-The app will work without Supabase for UI testing:
+The app will work without Firebase for UI testing:
 - Navigate to different pages
 - Test all activities
 - Experience the interfaces
@@ -173,7 +298,7 @@ The app will work without Supabase for UI testing:
 
 ### For Full Functionality
 
-After setting up Supabase:
+After setting up Firebase:
 
 1. **Create Accounts:**
    - Go to http://localhost:3000
@@ -202,22 +327,27 @@ After setting up Supabase:
 ## 🎯 Next Development Steps
 
 ### High Priority
-1. **Supabase Integration**
-   - Connect auth pages to Supabase Auth
-   - Implement real-time student data fetching
-   - Create activity completion tracking
-   - Add badge awarding logic
-   - Implement points system
+1. **Complete Firebase Integration**
+    - Set up Firebase project in Firebase Console (see `.sisyphus/guides/firebase-setup-guide.md`)
+    - Apply database migration for `firebase_uid` column
+    - Test all authentication flows (email/password, Google Sign-In)
+    - Verify Firebase users sync to PostgreSQL profiles
 
-2. **Create Student Management**
-   - Add student form for teachers
-   - Link students to teachers in database
-   - Handle parent association
+2. **Firestore Integration**
+     - Implement real-time student data fetching
+     - Create activity completion tracking
+     - Add badge awarding logic
+     - Implement points system
 
-3. **Activity Database Integration**
-   - Seed activities from database
-   - Track completions with scores
-   - Calculate progress metrics
+3. **Create Student Management**
+    - Add student form for teachers
+    - Link students to teachers in database
+    - Handle parent association
+
+4. **Activity Database Integration**
+    - Seed activities from database
+    - Track completions with scores
+    - Calculate progress metrics
 
 ### Medium Priority
 4. **Weekly Plans**
@@ -349,16 +479,21 @@ All pages are fully responsive:
 
 ## ⚠️ Known Issues
 
-1. **Supabase Not Configured**
-   - Auth pages show forms but won't authenticate
-   - Dashboards show mock data
-   - Activities don't save to database
-   - **Fix:** Configure `.env.local` and import schema
+1. **Firebase Not Configured**
+    - Auth pages show forms but won't authenticate
+    - Google Sign-In won't work
+    - Dashboards show mock data
+    - **Fix:** Configure Firebase credentials in `.env.local` and enable providers in Firebase Console
 
-2. **LSP Warning**
-   - Progress component import warning (harmless)
-   - TypeScript still compiles correctly
-   - **Fix:** Ignore or restart TypeScript server
+2. **Database Migration Not Applied**
+    - `firebase_uid` column missing from profiles table
+    - Auth users won't sync to database
+    - **Fix:** Run migration: `supabase migration up --local` or execute SQL manually
+
+3. **LSP Warning**
+    - Firebase module imports show as errors (harmless)
+    - TypeScript still compiles correctly after `npm install`
+    - **Fix:** Run `npm install` to install Firebase packages
 
 ---
 
@@ -445,16 +580,18 @@ PORT=3001 npm run dev
 
 ## 🎯 What's Working Right Now
 
-### Without Supabase Setup
+### Without Firebase Setup
 - ✅ All page navigation works
 - ✅ All activities are playable
-- ✅ Authentication UI is functional
+- ✅ Authentication UI is functional (email/password forms, Google buttons)
 - ✅ Dashboards display mock data
 - ✅ All interactive elements respond correctly
 
-### With Supabase Setup
-- ⚠️ Authentication will connect to real accounts
-- ⚠️ Student/Teacher data will persist
+### With Firebase Setup
+- ⚠️ Authentication will connect to Firebase Auth
+- ⚠️ Google Sign-In will work with OAuth
+- ⚠️ Firebase users will sync to PostgreSQL profiles
+- ⚠️ Student/Teacher data will persist in Supabase
 - ⚠️ Activity completions will save
 - ⚠️ Badges and points will track
 - ⚠️ Weekly plans can be created
@@ -482,9 +619,10 @@ cd .next
 
 **Deployment Checklist:**
 - [ ] Supabase configured in production
-- [ ] Environment variables set
-- [ ] Database schema imported
-- [ ] Test all user flows
+- [ ] Firebase project configured with Authentication enabled
+- [ ] Environment variables set (Supabase + Firebase)
+- [ ] Database schema imported (including `firebase_uid` migration)
+- [ ] Test all user flows (email/password, Google Sign-In)
 - [ ] Verify RLS policies
 - [ ] Check analytics integration
 - [ ] Prepare marketing materials

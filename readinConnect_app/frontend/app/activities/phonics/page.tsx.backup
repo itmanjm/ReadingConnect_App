@@ -1,0 +1,333 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft, Volume2, Check, X, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { getAuth } from 'firebase/auth';
+import { initializeApp } from 'firebase/app';
+import { getFirestore, collection, query, where, getDocs, doc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore';
+
+const app = initializeApp(JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG || '{}'));
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+interface CVCWord {
+  word_id: string;
+  word: string;
+  letter1: string;
+  letter2: string;
+  letter3: string;
+  difficulty_level: string;
+}
+
+interface WordProgress {
+  attempts: number;
+  correct_attempts: number;
+  current_mastery: number;
+}
+
+const LETTERS = ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'Z', 'X', 'C', 'V', 'B', 'N', 'M'];
+
+export default function CVCWordPractice() {
+  const router = useRouter();
+  const [words, setWords] = useState<CVCWord[]>([]);
+  const [currentWord, setCurrentWord] = useState<CVCWord | null>(null);
+  const [selectedLetters, setSelectedLetters] = useState<string[]>([]);
+  const [showingWord, setShowingWord] = useState(false);
+  const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [readingLevel, setReadingLevel] = useState<string>('kindergarten');
+
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((authUser) => {
+      if (authUser) {
+        setUser(authUser);
+      }
+    });
+    return unsubscribeAuth;
+  }, []);
+
+  useEffect(() => {
+    if (!user || !readingLevel) return;
+    
+    setLoading(true);
+    const wordsQuery = query(
+      collection(db, 'reading_levels/' + readingLevel + '/cvc_words'),
+      where('difficulty_level', '==', 'easy')
+    );
+    
+    const unsubscribe = onSnapshot(wordsQuery, (snapshot) => {
+      const wordsData = snapshot.docs.map((doc: any) => ({
+        word_id: doc.id,
+        ...doc.data() as CVCWord
+      }));
+      setWords(wordsData);
+      if (wordsData.length > 0) {
+        setCurrentWord(wordsData[0]);
+      }
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching CVC words:', error);
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, [user, readingLevel]);
+
+  const speakWord = (word: string): void => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.8;
+      utterance.pitch = 1;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  const selectLetter = (letter: string): void => {
+    if (selectedLetters.length < 3 && !selectedLetters.includes(letter)) {
+      setSelectedLetters([...selectedLetters, letter]);
+      speakWord(letter);
+    }
+  };
+
+  const removeLetter = (index: number): void => {
+    const newLetters = [...selectedLetters];
+    newLetters.splice(index, 1);
+    setSelectedLetters(newLetters);
+  };
+
+  const checkAnswer = useCallback(async (): Promise<void> => {
+    if (!currentWord || selectedLetters.length !== 3) return;
+    
+    const builtWord = selectedLetters.join('').toLowerCase();
+    const correctWord = currentWord.word.toLowerCase();
+    const isCorrect = builtWord === correctWord;
+    
+    setShowingWord(true);
+    speakWord(currentWord.word);
+    
+    if (isCorrect) {
+      setScore(prev => prev + 10);
+      setStreak(prev => prev + 1);
+      
+      await updateDoc(doc(db, 'users', user.uid, 'cvc_word_progress', currentWord.word_id), {
+        attempts: 1,
+        correct_attempts: 1,
+        current_mastery: 80,
+        last_attempt: new Date().toISOString()
+      }, { merge: true });
+    } else {
+      setStreak(0);
+      
+      await updateDoc(doc(db, 'users', user.uid, 'cvc_word_progress', currentWord.word_id), {
+        attempts: 1,
+        correct_attempts: 0,
+        current_mastery: 0,
+        last_attempt: new Date().toISOString()
+      }, { merge: true });
+    }
+    
+    setTimeout(() => {
+      setShowingWord(false);
+      setSelectedLetters([]);
+      const nextWordIndex = words.findIndex(w => w.word_id === currentWord.word_id) + 1;
+      if (nextWordIndex < words.length) {
+        setCurrentWord(words[nextWordIndex]);
+      }
+    }, 2000);
+  }, [currentWord, selectedLetters, user, words]);
+
+  const skipWord = (): void => {
+    setSelectedLetters([]);
+    const nextWordIndex = words.findIndex(w => w.word_id === currentWord.word_id) + 1;
+    if (nextWordIndex < words.length) {
+      setCurrentWord(words[nextWordIndex]);
+    }
+  };
+
+  const resetGame = (): void => {
+    setCurrentWord(words[0]);
+    setSelectedLetters([]);
+    setShowingWord(false);
+    setScore(0);
+    setStreak(0);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FFF8F0] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6B6B] mx-auto"></div>
+          <p className="mt-4 text-[#8B7355]">Loading CVC words...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#FFF8F0] p-8">
+      <nav className="bg-white/90 backdrop-blur-sm border-b border-[#FFB5BA]/30 sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <Button
+            variant="outline"
+            onClick={() => router.push('/dashboard/student')}
+            className="rounded-full border-[#FF6B6B]/30 text-[#FF6B6B] hover:bg-[#FF6B6B] hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Dashboard
+          </Button>
+          
+          <div className="flex items-center gap-6">
+            <div className="bg-[#FFE5B4] px-4 py-2 rounded-full">
+              <span className="text-lg">⭐</span>
+              <span className="font-bold text-[#5A4A42] ml-1">{score}</span>
+            </div>
+            {streak > 0 && (
+              <div className="bg-[#FF6B6B] px-4 py-2 rounded-full animate-pulse">
+                <span className="text-lg">🔥</span>
+                <span className="font-bold text-white ml-1">{streak}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      <main className="container mx-auto py-8">
+        <Card className="max-w-4xl mx-auto bg-white border-0 shadow-2xl shadow-[#FFB5BA]/20 rounded-3xl">
+          <CardHeader className="bg-gradient-to-r from-[#FF6B6B] to-[#FFB5BA] border-b border-[#FF6B6B]/20">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">📝</span>
+                <div>
+                  <CardTitle className="text-2xl font-black text-[#5A4A42]">CVC Word Practice</CardTitle>
+                  <p className="text-sm text-[#8B7355]">Build words one letter at a time</p>
+                </div>
+              </div>
+              <Button
+                onClick={resetGame}
+                variant="outline"
+                className="rounded-full border-2 border-[#FF6B6B]/30 text-[#FF6B6B] hover:bg-[#FF6B6B]/20"
+              >
+                Reset
+              </Button>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-8 p-8">
+            {currentWord && (
+              <>
+                <div className="text-center space-y-4">
+                  <div className="bg-[#FFE5B4]/10 rounded-2xl p-6 inline-block">
+                    {showingWord ? (
+                      <div className="text-5xl font-black text-[#FF6B6B] tracking-wider">
+                        {currentWord.word}
+                      </div>
+                    ) : (
+                      <div className="flex gap-4">
+                        {selectedLetters.map((letter, index) => (
+                          <div
+                            key={index}
+                            className="relative group cursor-pointer"
+                            onClick={() => removeLetter(index)}
+                          >
+                            <div className="text-4xl font-bold bg-white border-2 border-[#FF6B6B]/30 rounded-xl px-6 py-4 text-[#FF6B6B] shadow-md">
+                              {letter}
+                            </div>
+                            <div className="absolute -top-2 -right-2 text-xs bg-[#FF6B6B] text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                              <X className="h-3 w-3" />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedLetters.length < 3 && (
+                    <p className="text-lg text-[#8B7355]">Select {3 - selectedLetters.length} more letter(s)</p>
+                  )}
+
+                  <div className="flex justify-center gap-4 mt-4">
+                    {!showingWord && (
+                      <Button
+                        onClick={() => speakWord(currentWord.word)}
+                        variant="outline"
+                        className="rounded-full border-2 border-[#B8E0D2] text-[#B8E0D2] hover:bg-[#B8E0D2]/20"
+                      >
+                        <Volume2 className="h-5 w-5 mr-2" />
+                        Hear Word
+                      </Button>
+                    )}
+                    
+                    {showingWord && (
+                      <Button
+                        onClick={checkAnswer}
+                        disabled={selectedLetters.length !== 3}
+                        className="rounded-full bg-gradient-to-r from-[#B8E0D2] to-[#98D0C0] hover:from-[#A8D5BA] hover:to-[#7CC7C0] text-white text-xl px-8 py-4 shadow-xl hover:shadow-2xl hover:scale-105"
+                      >
+                        Check Answer
+                      </Button>
+                    )}
+                    
+                    <Button
+                      onClick={skipWord}
+                      variant="outline"
+                      className="rounded-full border-2 border-[#FFB5BA]/30 text-[#8B7355] hover:border-[#FF6B6B]"
+                    >
+                      Skip <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                  </div>
+
+                  {showingWord && (
+                    <div className="mt-8 p-6 rounded-2xl border-4 bg-[#B8E0D2]/10 border-[#B8E0D2]">
+                      {selectedLetters.join('').toLowerCase() === currentWord.word.toLowerCase() ? (
+                        <div className="text-center">
+                          <Check className="h-16 w-16 text-[#B8E0D2] mx-auto mb-2" />
+                          <p className="text-2xl font-bold text-[#B8E0D2]">Correct!</p>
+                          <p className="text-[#8B7355] mt-2">Great job! +10 points</p>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <X className="h-16 w-16 text-[#FF6B6B] mx-auto mb-2" />
+                          <p className="text-2xl font-bold text-[#FF6B6B]">Try Again</p>
+                          <p className="text-[#8B7355] mt-2">
+                            Correct answer: <strong className="text-[#B8E0D2]">{currentWord.word}</strong>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="border-t border-[#FFB5BA]/30 pt-8">
+                  <h3 className="text-lg font-bold text-[#5A4A42] mb-4">Available Letters</h3>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {LETTERS.map((letter) => {
+                      const isSelected = selectedLetters.includes(letter);
+                      const isNeeded = currentWord.word.toUpperCase().includes(letter);
+                      
+                      return (
+                        <button
+                          key={letter}
+                          onClick={() => selectLetter(letter)}
+                          disabled={isSelected || !isNeeded || showingWord}
+                          className={'w-14 h-14 text-xl font-bold rounded-xl border-2 transition-all duration-200 hover:scale-110 active:scale-95 ' + (isSelected ? 'bg-[#FF6B6B] text-white border-[#FF6B6B] cursor-not-allowed' : 'bg-white border-[#FFB5BA]/30 hover:border-[#FF6B6B] hover:shadow-lg') + (!isNeeded ? ' opacity-30' : '')}
+                        >
+                          {letter}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+}

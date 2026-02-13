@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app'
-import { getAuth, setPersistence, browserLocalPersistence, inMemoryPersistence } from 'firebase/auth'
+import { getAuth, setPersistence, inMemoryPersistence } from 'firebase/auth'
+import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,25 +12,14 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 }
 
-const app = initializeApp(firebaseConfig)
+export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
+export const db = getFirestore(app)
 
-try {
-  console.log('Auth: Setting persistence to browserLocalPersistence')
-  await setPersistence(auth, browserLocalPersistence)
-  console.log('Auth: Persistence successfully set to browserLocalPersistence')
-} catch (error: any) {
-  console.error('Auth: CRITICAL - Failed to set persistence:', error.code, error.message)
-  console.error('Auth: Full error details:', error)
-  try {
-    console.log('Auth: Trying fallback to inMemoryPersistence (for testing)')
-    await setPersistence(auth, inMemoryPersistence)
-  } catch (fallbackError) {
-    console.error('Auth: Fallback also failed:', fallbackError)
-  }
-}
-
+setPersistence(auth, inMemoryPersistence)
 auth.useDeviceLanguage()
+
+console.log('Auth: Firebase initialized with inMemoryPersistence')
 
 export async function checkPersistence() {
   console.log('Auth: Checking Firebase auth settings...')

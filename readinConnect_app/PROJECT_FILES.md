@@ -17,7 +17,7 @@ readinConnect_app/
 │   ├── manifest.md             # Tools index
 │   ├── setup/
 │   │   ├── init_project.py     # Project initializer
-│   │   └── validate_supabase.py  # Connection tester
+│   │   └── validate_firebase.py  # Connection tester
 │   └── database/
 │       ├── schema.sql          # Database schema
 │       ├── migrate.py          # Migration runner
@@ -71,30 +71,30 @@ npx create-next-app@latest frontend \
 ```bash
 # Create .env.local
 cat > frontend/.env.local << 'EOF'
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_URL=your_firebase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_firebase_anon_key
 EOF
 ```
 
 ### 3. Setup Database
 
-**Option A: Supabase Dashboard (Recommended)**
-1. Go to https://supabase.com/dashboard
+**Option A: Firebase Dashboard (Recommended)**
+1. Go to https://firebase.com/dashboard
 2. Navigate to **SQL Editor**
 3. Open `tools/database/schema.sql`
 4. Copy and paste entire content
 5. Click **Run**
 
-**Option B: Supabase CLI**
+**Option B: Firebase CLI**
 ```bash
-supabase db push
+firebase db push
 ```
 
 ### 4. Start Development
 
 ```bash
 cd frontend
-npm install @supabase/supabase-js @supabase/ssr @supabase/auth-helpers-nextjs
+npm install @firebase/firebase-js @firebase/ssr @firebase/auth-helpers-nextjs
 npx shadcn-ui@latest init
 npm run dev
 ```

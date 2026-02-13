@@ -26,7 +26,7 @@ readinConnect_app/
 │   ├── manifest.md             # Tools index
 │   ├── setup/
 │   │   ├── init_project.py
-│   │   └── validate_supabase.py
+│   │   └── validate_firebase.py
 │   └── database/
 │       ├── schema.sql          # Database schema
 │       ├── migrate.py
@@ -45,8 +45,8 @@ readinConnect_app/
 - **Frontend:** Next.js 14 (App Router)
 - **Styling:** Tailwind CSS
 - **Components:** shadcn/ui
-- **Database:** Supabase (PostgreSQL)
-- **Auth:** Supabase Auth
+- **Database:** Firebase (Firestore)
+- **Auth:** Firebase Auth
 - **State:** Zustand + React Query
 - **Animation:** Framer Motion
 - **PDF:** @react-pdf/renderer
@@ -66,24 +66,23 @@ npx create-next-app@latest frontend \
   --use-npm --skip-git
 ```
 
-### 2. Setup Supabase
+### 2. Setup Firebase
 
 ```bash
-# Get credentials from: https://supabase.com/dashboard
+# Get credentials from: https://console.firebase.google.com/
 cp .env.example .env.local
-# Edit .env.local with your Supabase URL and keys
+# Edit .env.local with your Firebase config
 ```
 
 ### 3. Create Database Schema
 
 ```bash
-# Option A: Via Supabase Dashboard (Recommended)
-# Go to dashboard > SQL Editor
-# Copy content from: tools/database/schema.sql
-# Paste and run
+# Option A: Via Firebase Console (Recommended)
+# Go to Firestore Database > Create Database
+# Import JSON seed files from firebase/seed/ directory
 
-# Option B: Via Supabase CLI
-supabase db push
+# Option B: Via Firebase CLI
+firebase firestore:import firebase/seed/ --project your-project-id
 ```
 
 ### 4. Seed Database
@@ -156,7 +155,7 @@ Open: http://localhost:3000
 | Tool | Purpose | Command |
 |-------|---------|-----------|
 | `init_project.py` | Initialize Next.js project | `python3 tools/setup/init_project.py` |
-| `validate_supabase.py` | Test Supabase connection | `python3 tools/setup/validate_supabase.py` |
+| `validate_firebase.py` | Test Firebase connection | `python3 tools/setup/validate_firebase.py` |
 | `migrate.py` | Run database migrations | `python3 tools/database/migrate.py` |
 | `seed.py` | Populate with sample data | `python3 tools/database/seed.py --full` |
 | `stress_test.py` | Run test suite | `python3 tools/database/stress_test.py` |
@@ -174,7 +173,7 @@ Open: http://localhost:3000
 - Teacher tools (observation_sheets)
 - Printables (printable_assets)
 
-**Security:** Row-Level Security (RLS) on all user-facing tables
+**Security:** Firestore Security Rules on all collections
 **Functions:** Progress summaries, points calculation, badge awarding
 
 ---

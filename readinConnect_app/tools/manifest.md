@@ -7,7 +7,7 @@
 |------|-------------|----------|
 | schema.sql | Complete database schema for ReadinConnect app with RLS policies | tools/database/ |
 | init_project.py | Initialize Next.js project with required dependencies | tools/setup/ |
-| validate_supabase.py | Test Supabase connection and credentials | tools/setup/ |
+| validate_firebase.py | Test Firebase connection and credentials | tools/setup/ |
 | migrate.py | Run database migrations | tools/database/ |
 | seed.py | Seed database with sample data | tools/database/ |
 | stress_test.py | Stress test runner for database validation | tools/database/ |

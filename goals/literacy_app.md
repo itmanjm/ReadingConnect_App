@@ -4,7 +4,7 @@
 
 Build a literacy learning platform following ATLAS methodology within the GOTCHA framework. The app helps new readers (ages 4-8) build foundational literacy skills through interactive activities.
 
-**Tech Stack**: Next.js 14 + Tailwind CSS + Supabase (PostgreSQL, Auth, Storage)
+**Tech Stack**: Next.js 14 + Tailwind CSS + Firebase (Firestore, Auth, Storage)
 
 ---
 
@@ -61,9 +61,9 @@ See `tools/database/schema.sql` for complete database schema.
 | Styling | Tailwind CSS | Rapid UI development |
 | Components | shadcn/ui | Accessible, customizable components |
 | State | Zustand + React Query | Client state + server state sync |
-| Database | Supabase (PostgreSQL) | Data persistence, real-time sync |
-| Auth | Supabase Auth | Row-level security, multi-user support |
-| Storage | Supabase Storage | Audio files, PDFs, recordings |
+| Database | Firebase (Firestore) | Data persistence, real-time sync |
+| Auth | Firebase Auth | Multi-provider auth, role-based access |
+| Storage | Firebase Storage | Audio files, PDFs, recordings |
 | PDF | react-pdf | Generate printable materials |
 | Audio | Web Speech API (native) | Text-to-speech, speech-to-text |
 
@@ -71,7 +71,7 @@ See `tools/database/schema.sql` for complete database schema.
 
 | Service | Purpose | Auth Type |
 |---------|---------|-----------|
-| Supabase | DB, Auth, Storage | API Key + OAuth |
+| Firebase | DB, Auth, Storage | API Key + OAuth |
 | Web Speech API | TTS/STT (built-in) | None (browser native) |
 
 ### Edge Cases
@@ -93,17 +93,17 @@ See `tools/database/schema.sql` — documented in comments.
 Before building, verify:
 
 ```
-[ ] Supabase project created
-[ ] Supabase URL and anon keys available
-[ ] Database migration script ready
-[ ] Row-level security policies defined
+[ ] Firebase project created
+[ ] Firebase config available (API keys, project ID)
+[ ] Firestore collections structure ready
+[ ] Firestore security rules defined
 [ ] Storage buckets configured
 [ ] Environment variables documented
 ```
 
 ### Validation Tools
 
-Run `tools/setup/validate_supabase.py` to test Supabase connection.
+Run `tools/setup/validate_firebase.py` to test Firebase connection.
 
 ---
 
@@ -151,8 +151,8 @@ Run `tools/setup/validate_supabase.py` to test Supabase connection.
 
 **Integration Testing:**
 ```
-[ ] Supabase auth flow working
-[ ] RLS policies blocking unauthorized access
+[ ] Firebase auth flow working
+[ ] Firestore security rules blocking unauthorized access
 [ ] File upload/download to storage
 [ ] Web Speech API works across browsers
 ```

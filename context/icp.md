@@ -63,7 +63,7 @@
 |----------|-------------|
 | **Languages** | TypeScript/JavaScript/Python preferred for web tools, Rust/Go for systems |
 | **Frameworks** | Modern, well-maintained over bleeding-edge |
-| **Databases** | SQLite for local, PostgreSQL/Supabase for cloud |
+| **Databases** | SQLite for local, Firebase/Cloud Firestore for cloud |
 | **Deployment** | Simple, reliable, automated pipelines |
 | **Documentation** | Code comments + README, not over-documentation |
 | **Testing** | Critical path, end-to-end for user-facing, unit for libraries |

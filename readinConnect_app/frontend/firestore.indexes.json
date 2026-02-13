@@ -1,0 +1,28 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "cvc_word_progress",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "student_id", "order": "ASCENDING"},
+        {"fieldPath": "current_mastery", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "sight_word_progress",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "student_id", "order": "ASCENDING"},
+        {"fieldPath": "current_mastery", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "level_progress",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "level_id", "order": "ASCENDING"},
+        {"fieldPath": "words_mastered", "order": "DESCENDING"}
+      ]
+    }
+  ]
+}

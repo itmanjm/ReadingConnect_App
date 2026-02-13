@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+.firebase
+dist
+*.log
+.env.local
+.env*.local
+*.firebase-adminsdk*.json
+service-account.json
+firebase-adminsdk-*.json

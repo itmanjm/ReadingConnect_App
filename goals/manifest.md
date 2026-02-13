@@ -5,7 +5,7 @@
 
 | Goal | Description | Status |
 |------|-------------|--------|
-| literacy_app | Build literacy learning platform for ages 4-8 with phonics, sight words, comprehension, and gamification (Next.js + Supabase) | Active |
+| literacy_app | Build literacy learning platform for ages 4-8 with phonics, sight words, comprehension, and gamification (Next.js + Firebase) | Active |
 | build_app | Build full-stack apps using ATLAS 5-step workflow (Architect, Trace, Link, Assemble, Stress-test) | Active |
 | youtube_monitoring | Monitor 23 YouTube channels for insights (Jack Roberts ecosystem, AI tools, fitness, marriage) | Active |
 | content_automation | Automate content creation using AI tools (OpenClaw, Cursor, local models) | Active |

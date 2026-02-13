@@ -64,9 +64,7 @@ cd literacy-learning
 **Install core dependencies:**
 
 ```bash
-npm install @supabase/supabase-js \
-  @supabase/ssr \
-  @supabase/auth-helpers-nextjs \
+npm install firebase \
   @radix-ui/react-dialog \
   @radix-ui/react-dropdown-menu \
   @radix-ui/react-tabs \
@@ -129,12 +127,11 @@ mkdir -p components/ui
 mkdir -p components/activities
 mkdir -p components/dashboard
 mkdir -p components/shared
-mkdir -p lib/supabase
+mkdir -p lib/firebase
 mkdir -p lib/db
 mkdir -p lib/stores
 mkdir -p types
-mkdir -p supabase/migrations
-mkdir -p supabase/seed
+mkdir -p firebase/rules
 mkdir -p public/audio/letters
 mkdir -p public/audio/effects
 mkdir -p public/audio/stories
@@ -148,83 +145,97 @@ mkdir -p public/images/illustrations
 
 ```bash
 cat > .env.local << 'EOF'
-# Supabase Configuration
-# Get these from: https://supabase.com/dashboard
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url_here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+# Firebase Configuration
+# Get these from: https://console.firebase.google.com/
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key_here
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id_here
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id_here
+NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id_here
 
-# Optional: For server-side operations
-# SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+# Admin SDK (for server-side operations - never expose to client)
+FIREBASE_ADMIN_PROJECT_ID=your_project_id
+FIREBASE_ADMIN_CLIENT_EMAIL=your_service_account_email
+FIREBASE_ADMIN_PRIVATE_KEY=your_private_key
 EOF
 ```
 
 **Important:**
-1. Go to https://supabase.com/dashboard
+1. Go to https://console.firebase.google.com/
 2. Create a new project (if you don't have one)
-3. Go to Settings > API
-4. Copy Project URL and Anon Key
-5. Update `.env.local` with your credentials
+3. Navigate to Project Settings
+4. Scroll down to "Your apps" and create a Web app
+5. Copy the Firebase SDK configuration
+6. Update `.env.local` with your credentials
+7. For admin operations, go to Project Settings > Service Accounts > Generate New Private Key
 
-### Step 7: Setup Database
+### Step 7: Setup Firebase
 
-**Option A: Via Supabase Dashboard (Recommended)**
+**Create Firestore Collections:**
 
-1. Go to https://supabase.com/dashboard
+1. Go to https://console.firebase.google.com/
 2. Select your project
-3. Navigate to **SQL Editor**
-4. Open `tools/database/schema.sql` from your Atlas directory
-5. Copy the entire content
-6. Paste into SQL Editor
-7. Click **Run** (or press Ctrl/Cmd + Enter)
-8. Wait for schema to be created (should take 10-30 seconds)
+3. Navigate to **Firestore Database**
+4. Create a database (start in Test Mode for development)
+5. Create collections manually or import data from `firebase/seed-data.json`
 
-**Option B: Via Supabase CLI**
+**Create Firebase Storage:**
 
-```bash
-# Install Supabase CLI
-npm install -g supabase
+1. Navigate to **Storage**
+2. Get Started
+3. Start in Test Mode (for development)
+4. Create folders: `audio/letters`, `audio/effects`, `audio/stories`, `images/badges`, `images/illustrations`
 
-# Login
-supabase login
+**Set up Firestore Security Rules:**
 
-# Link to your project (get project ID from dashboard)
-supabase link --project-ref YOUR_PROJECT_ID
+1. Navigate to Firestore > Rules
+2. Copy rules from `firebase/firestore.rules`
+3. Publish rules
 
-# Push schema
-supabase db push
-```
+**Set up Storage Security Rules:**
+
+1. Navigate to Storage > Rules
+2. Copy storage rules
+3. Publish rules
 
 ### Step 8: Seed Database (Optional)
 
 **To get started with sample data:**
 
-1. In Supabase dashboard > SQL Editor
-2. Open `tools/database/seed.py` from Atlas
-3. Run the seed data sections manually:
-   - Copy sight words INSERT statements
-   - Copy phonics letters INSERT statements
-   - Copy badges INSERT statements
-   - Paste and run each section separately
+1. In Firebase Console > Firestore Database
+2. Click "Import Document"
+3. Upload JSON files from `firebase/seed/` directory:
+   - `activities.json`
+   - `sight-words.json`
+   - `phonics-letters.json`
+   - `badges.json`
 
-Or use Python script (if system resources allow):
+Or use Firebase CLI:
 
 ```bash
-# From Atlas directory, run
-python3 tools/database/seed.py --full
+# Install Firebase CLI
+npm install -g firebase-tools
+
+# Login
+firebase login
+
+# Import data
+firebase firestore:import firebase/seed/activities.json --project your-project-id
 ```
 
 ### Step 9: Test Connection
 
 ```bash
 # From Atlas directory
-python3 tools/setup/validate_supabase.py
+python3 tools/setup/validate_firebase.py
 ```
 
 Expected output:
 ```
-✅ Supabase connection successful!
-   URL: https://... (truncated)
-   Anon key: ...... (truncated)
+✅ Firebase connection successful!
+   Project ID: ... (truncated)
+   App ID: ...... (truncated)
 ```
 
 ### Step 10: Start Development Server
@@ -242,46 +253,65 @@ npm run dev
 
 After setting up the project, create these files manually:
 
-### 1. lib/supabase/client.ts
+### 1. lib/firebase/client.ts
 
 ```typescript
-import { createBrowserClient } from '@supabase/ssr'
-import { Database } from '@/types/database'
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
+import { getAuth, Auth } from 'firebase/auth'
+import { getFirestore, Firestore } from 'firebase/firestore'
+import { getStorage, FirebaseStorage } from 'firebase/storage'
 
-export function createClient() {
-  return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 }
+
+let app: FirebaseApp
+let auth: Auth
+let db: Firestore
+let storage: FirebaseStorage
+
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig)
+  auth = getAuth(app)
+  db = getFirestore(app)
+  storage = getStorage(app)
+} else {
+  app = getApps()[0]
+  auth = getAuth(app)
+  db = getFirestore(app)
+  storage = getStorage(app)
+}
+
+export { app, auth, db, storage }
 ```
 
-### 2. lib/supabase/server.ts
+### 2. lib/firebase/admin.ts
 
 ```typescript
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { Database } from '@/types/database'
+import { getFirestore } from 'firebase-admin/firestore'
+import { getStorage } from 'firebase-admin/storage'
+import admin from 'firebase-admin'
 
-export function createClient() {
-  const cookieStore = cookies()
+if (!admin.apps.length) {
+  const serviceAccount = {
+    projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  }
 
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) { return cookieStore.get(name)?.value },
-        set(name: string, value: string, options: any) {
-          try { cookieStore.set({ name, value, ...options }) } catch (e) {}
-        },
-        remove(name: string, options: any) {
-          try { cookieStore.delete({ name, ...options }) } catch (e) {}
-        }
-      }
-    }
-  )
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  })
 }
+
+export const adminDb = getFirestore()
+export const adminStorage = getStorage()
 ```
 
 ### 3. types/database.ts
@@ -343,7 +373,7 @@ export interface Database {
 }
 ```
 
-**Tip:** Run `npx supabase gen types typescript --local` to generate complete types automatically.
+**Tip:** Use Firebase CLI to auto-generate types or manually define interfaces based on your Firestore collections.
 
 ### 4. app/layout.tsx
 
@@ -412,21 +442,29 @@ export default function Home() {
 npm install -g create-next-app
 ```
 
-### Issue: Supabase connection fails
+### Issue: Firebase connection fails
 
 **Solutions:**
-1. Verify .env.local has correct values
-2. Check Supabase project is active (not paused)
-3. Ensure Supabase URL format: `https://xxxxx.supabase.co`
-4. Regenerate API keys from Supabase dashboard
+1. Verify .env.local has correct Firebase configuration
+2. Check Firebase project is not disabled
+3. Ensure all environment variables are set correctly
+4. Regenerate Firebase config from console if needed
 
-### Issue: Database schema migration fails
+### Issue: Firestore permission denied
 
 **Solutions:**
-1. Copy schema in smaller chunks (section by section)
-2. Check for syntax errors in SQL
-3. Ensure you have admin/service role permissions
-4. Use Supabase dashboard SQL Editor for visual feedback
+1. Check Firestore Security Rules
+2. For development, use test mode temporarily
+3. Ensure user is authenticated
+4. Check collection and document names match exactly
+
+### Issue: Storage upload fails
+
+**Solutions:**
+1. Check Storage Security Rules
+2. Ensure file paths are valid
+3. Verify file size limits (default 10MB)
+4. Check authentication status
 
 ---
 
@@ -438,9 +476,11 @@ After completing setup, verify:
 - [ ] `npm install` completed without errors
 - [ ] shadcn/ui components added
 - [ ] Directory structure created
-- [ ] `.env.local` configured with Supabase credentials
-- [ ] Database schema imported to Supabase
-- [ ] Validation script passes: `python3 tools/setup/validate_supabase.py`
+- [ ] `.env.local` configured with Firebase credentials
+- [ ] Firestore collections created (via console or import)
+- [ ] Firebase Storage configured with folders
+- [ ] Security rules published
+- [ ] Validation script passes: `python3 tools/setup/validate_firebase.py`
 - [ ] `npm run dev` starts successfully
 - [ ] Browser loads http://localhost:3000
 
@@ -479,7 +519,7 @@ Once setup is complete:
 **Goal File:** `goals/literacy_app.md`
 **Config File:** `args/literacy_app.yaml`
 
-**Supabase Dashboard:** https://supabase.com/dashboard
+**Firebase Console:** https://console.firebase.google.com/
 
 ---
 

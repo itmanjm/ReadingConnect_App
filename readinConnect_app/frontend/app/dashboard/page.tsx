@@ -10,15 +10,17 @@ export default function DashboardPage() {
   const user = useAuthStore((state) => state.user)
   const profile = useAuthStore((state) => state.profile)
   const loading = useAuthStore((state) => state.loading)
-  const loadProfile = useAuthStore((state) => state.loadProfile)
 
   useEffect(() => {
+    console.log('Dashboard: Effect running', { user: user?.email, profile, loading })
+    
+    // Only redirect if we're not loading AND there's no user
     if (!loading) {
       if (!user) {
+        console.log('Dashboard: No user found, redirecting to login')
         router.push('/auth/login')
-      } else if (!profile) {
-        loadProfile()
-      } else {
+      } else if (profile) {
+        console.log('Dashboard: User and profile found, redirecting to role page:', profile.role)
         switch (profile.role) {
           case 'student':
             router.push('/dashboard/student')
@@ -36,10 +38,9 @@ export default function DashboardPage() {
             router.push('/')
         }
       }
-    } else {
-      loadProfile()
+      // If user exists but no profile yet, wait for profile to be set
     }
-  }, [user, profile, loading, router, loadProfile])
+  }, [user, profile, loading, router])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -51,6 +52,9 @@ export default function DashboardPage() {
           <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
           <p className="text-xl text-gray-600">Loading your dashboard...</p>
         </div>
+        {user && !profile && (
+          <p className="text-sm text-gray-500">Setting up your profile...</p>
+        )}
       </div>
     </div>
   )

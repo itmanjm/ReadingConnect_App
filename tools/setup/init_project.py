@@ -33,17 +33,12 @@ def run_command(cmd: List[str], description: str, check: bool = True) -> bool:
     Returns:
         bool: True if successful, False otherwise
     """
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"{description}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     try:
-        result = subprocess.run(
-            cmd,
-            check=check,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(cmd, check=check, capture_output=True, text=True)
 
         if result.stdout:
             print(result.stdout)
@@ -74,11 +69,7 @@ def check_prerequisites() -> bool:
     checks_passed = True
 
     # Check Node.js
-    result = subprocess.run(
-        ['node', '--version'],
-        capture_output=True,
-        text=True
-    )
+    result = subprocess.run(["node", "--version"], capture_output=True, text=True)
     if result.returncode == 0:
         print(f"✅ Node.js: {result.stdout.strip()}")
     else:
@@ -86,11 +77,7 @@ def check_prerequisites() -> bool:
         checks_passed = False
 
     # Check npm
-    result = subprocess.run(
-        ['npm', '--version'],
-        capture_output=True,
-        text=True
-    )
+    result = subprocess.run(["npm", "--version"], capture_output=True, text=True)
     if result.returncode == 0:
         print(f"✅ npm: {result.stdout.strip()}")
     else:
@@ -115,8 +102,9 @@ def create_nextjs_project(project_name: str) -> bool:
     if project_path.exists():
         print(f"\n⚠️  Project directory '{project_name}' already exists")
         response = input(f"   Delete and recreate? [y/N]: ").strip().lower()
-        if response == 'y':
+        if response == "y":
             import shutil
+
             shutil.rmtree(project_path)
             print(f"   Deleted existing directory")
         else:
@@ -125,22 +113,21 @@ def create_nextjs_project(project_name: str) -> bool:
 
     # Create project using create-next-app
     cmd = [
-        'npx', 'create-next-app@latest',
+        "npx",
+        "create-next-app@latest",
         project_name,
-        '--typescript',
-        '--tailwind',
-        '--eslint',
-        '--app',
-        '--no-src-dir',
-        '--import-alias', '@/*',
-        '--use-npm',
-        '--skip-git'
+        "--typescript",
+        "--tailwind",
+        "--eslint",
+        "--app",
+        "--no-src-dir",
+        "--import-alias",
+        "@/*",
+        "--use-npm",
+        "--skip-git",
     ]
 
-    success = run_command(
-        cmd,
-        f"Creating Next.js project: {project_name}"
-    )
+    success = run_command(cmd, f"Creating Next.js project: {project_name}")
 
     if not success:
         return False
@@ -160,45 +147,35 @@ def install_dependencies() -> bool:
         bool: True if successful
     """
     dependencies = [
-        # Supabase
-        '@supabase/supabase-js',
-        '@supabase/ssr',
-        '@supabase/auth-helpers-nextjs',
-
+        # Firebase
+        "firebase",
         # UI Components
-        '@radix-ui/react-dialog',
-        '@radix-ui/react-dropdown-menu',
-        '@radix-ui/react-tabs',
-        '@radix-ui/react-progress',
-        '@radix-ui/react-avatar',
-        '@radix-ui/react-alert-dialog',
-        '@radix-ui/react-select',
-
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-dropdown-menu",
+        "@radix-ui/react-tabs",
+        "@radix-ui/react-progress",
+        "@radix-ui/react-avatar",
+        "@radix-ui/react-alert-dialog",
+        "@radix-ui/react-select",
         # Icons
-        'lucide-react',
-
+        "lucide-react",
         # State Management
-        'zustand',
-        '@tanstack/react-query',
-
+        "zustand",
+        "@tanstack/react-query",
         # Animation
-        'framer-motion',
-
+        "framer-motion",
         # PDF Generation
-        '@react-pdf/renderer',
-
+        "@react-pdf/renderer",
         # Utilities
-        'date-fns',
-        'clsx',
-        'tailwind-merge',
+        "date-fns",
+        "clsx",
+        "tailwind-merge",
     ]
 
     print(f"\n📦 Installing {len(dependencies)} dependencies...")
 
     success = run_command(
-        ['npm', 'install'] + dependencies,
-        "Installing dependencies",
-        check=False
+        ["npm", "install"] + dependencies, "Installing dependencies", check=False
     )
 
     return success
@@ -212,18 +189,18 @@ def install_dev_dependencies() -> bool:
         bool: True if successful
     """
     dependencies = [
-        '@types/node',
-        '@types/react',
-        '@types/react-dom',
-        'typescript',
+        "@types/node",
+        "@types/react",
+        "@types/react-dom",
+        "typescript",
     ]
 
     print(f"\n📦 Installing {len(dependencies)} dev dependencies...")
 
     success = run_command(
-        ['npm', 'install', '--save-dev'] + dependencies,
+        ["npm", "install", "--save-dev"] + dependencies,
         "Installing dev dependencies",
-        check=False
+        check=False,
     )
 
     return success
@@ -240,9 +217,7 @@ def setup_shadcn_ui() -> bool:
 
     # Initialize shadcn/ui
     success = run_command(
-        ['npx', 'shadcn-ui@latest', 'init', '-y'],
-        "Initializing shadcn/ui",
-        check=False
+        ["npx", "shadcn-ui@latest", "init", "-y"], "Initializing shadcn/ui", check=False
     )
 
     if not success:
@@ -250,29 +225,29 @@ def setup_shadcn_ui() -> bool:
 
     # Add essential components
     components = [
-        'button',
-        'card',
-        'input',
-        'label',
-        'tabs',
-        'progress',
-        'avatar',
-        'dialog',
-        'dropdown-menu',
-        'alert-dialog',
-        'select',
-        'badge',
-        'checkbox',
-        'separator',
+        "button",
+        "card",
+        "input",
+        "label",
+        "tabs",
+        "progress",
+        "avatar",
+        "dialog",
+        "dropdown-menu",
+        "alert-dialog",
+        "select",
+        "badge",
+        "checkbox",
+        "separator",
     ]
 
     print(f"\n📦 Adding {len(components)} shadcn/ui components...")
 
     for component in components:
         run_command(
-            ['npx', 'shadcn-ui@latest', 'add', component],
+            ["npx", "shadcn-ui@latest", "add", component],
             f"Adding {component}",
-            check=False
+            check=False,
         )
 
     return True
@@ -288,21 +263,20 @@ def create_project_structure() -> bool:
     print("\n📁 Creating project structure...")
 
     directories = [
-        'components/ui',
-        'components/activities',
-        'components/dashboard',
-        'components/shared',
-        'lib/supabase',
-        'lib/db',
-        'lib/stores',
-        'types',
-        'supabase/migrations',
-        'supabase/seed',
-        'public/audio/letters',
-        'public/audio/effects',
-        'public/audio/stories',
-        'public/images/badges',
-        'public/images/illustrations',
+        "components/ui",
+        "components/activities",
+        "components/dashboard",
+        "components/shared",
+        "lib/firebase",
+        "lib/db",
+        "lib/stores",
+        "types",
+        "firebase/rules",
+        "public/audio/letters",
+        "public/audio/effects",
+        "public/audio/stories",
+        "public/images/badges",
+        "public/images/illustrations",
     ]
 
     for directory in directories:
@@ -314,28 +288,34 @@ def create_project_structure() -> bool:
 
 def create_env_file() -> bool:
     """
-    Create .env.local file with Supabase configuration.
+    Create .env.local file with Firebase configuration.
 
     Returns:
         bool: True if successful
     """
     print("\n🔐 Creating environment configuration...")
 
-    env_content = """# Supabase Configuration
-# Get these from: https://supabase.com/dashboard
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url_here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+    env_content = """# Firebase Configuration
+# Get these from: https://console.firebase.google.com/
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key_here
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id_here
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id_here
+NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id_here
 
-# Optional: For server-side operations
-# SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+# Admin SDK (server-side only)
+FIREBASE_ADMIN_PROJECT_ID=your_project_id
+FIREBASE_ADMIN_CLIENT_EMAIL=your_service_account_email
+FIREBASE_ADMIN_PRIVATE_KEY=your_private_key
 """
 
-    with open('.env.local', 'w') as f:
+    with open(".env.local", "w") as f:
         f.write(env_content)
 
     print("✅ Created .env.local")
-    print("\n⚠️  IMPORTANT: Update .env.local with your Supabase credentials")
-    print("   Get credentials from: https://supabase.com/dashboard")
+    print("\n⚠️  IMPORTANT: Update .env.local with your Firebase credentials")
+    print("   Get credentials from: https://console.firebase.google.com/")
 
     return True
 
@@ -351,28 +331,25 @@ def create_readme() -> bool:
 
     readme_content = """# Literacy Learning App
 
-A modern literacy education platform built with Next.js, Tailwind CSS, and Supabase.
+A modern literacy education platform built with Next.js, Tailwind CSS, and Firebase.
 
 ## 🚀 Getting Started
 
-### 1. Configure Supabase
+### 1. Configure Firebase
 
-1. Create a Supabase project at https://supabase.com
-2. Go to Settings > API
-3. Copy your Project URL and Anon Key
+1. Create a Firebase project at https://console.firebase.google.com/
+2. Navigate to Project Settings
+3. Create a Web app and get your Firebase config
 4. Update `.env.local` with your credentials
 
-### 2. Run Database Migrations
+### 2. Setup Firebase Database & Storage
 
 ```bash
-# Go to Supabase dashboard > SQL Editor
-# Copy and run the schema from: tools/database/schema.sql
-```
+# Create Firestore Database
+# Go to Firebase Console > Firestore Database > Create Database
 
-Or use Supabase CLI:
-
-```bash
-npx supabase db push
+# Create Storage buckets
+# Go to Firebase Console > Storage > Get Started
 ```
 
 ### 3. Run Development Server
@@ -393,11 +370,11 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 │   ├── dashboard/            # Dashboard components
 │   └── shared/               # Shared components
 ├── lib/                      # Utility libraries
-│   ├── supabase/             # Supabase client configuration
+│   ├── firebase/             # Firebase client configuration
 │   ├── db/                   # Database types and queries
 │   └── stores/               # Zustand state stores
 ├── types/                    # TypeScript type definitions
-├── supabase/                 # Database migrations and seeds
+├── firebase/                 # Firestore rules and storage config
 └── public/                   # Static assets
 ```
 
@@ -421,12 +398,12 @@ npm run type-check   # Run TypeScript compiler
 
 - Next.js 14 (App Router)
 - TypeScript
-- Tailwind CSS
-- shadcn/ui
-- Supabase (PostgreSQL, Auth, Storage)
-- Zustand
-- React Query
-- Framer Motion
+ - Tailwind CSS
+ - shadcn/ui
+ - Firebase (Firestore, Auth, Storage)
+ - Zustand
+ - React Query
+ - Framer Motion
 
 ## 📄 License
 
@@ -438,7 +415,7 @@ This project is built following the GOTCHA framework.
 *Generated: 2026-02-07*
 """
 
-    with open('README.md', 'w') as f:
+    with open("README.md", "w") as f:
         f.write(readme_content)
 
     print("✅ Created README.md")
@@ -454,9 +431,9 @@ def main():
     else:
         project_name = "literacy-learning"
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("   Literacy Learning App - Project Initialization")
-    print("="*60)
+    print("=" * 60)
     print(f"\nProject Name: {project_name}")
     print(f"Target Directory: {Path.cwd() / project_name}")
 
@@ -493,16 +470,16 @@ def main():
     create_readme()
 
     # Success!
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("✅ Project initialization complete!")
-    print("="*60)
+    print("=" * 60)
     print(f"\nNext steps:")
     print(f"  1. cd {project_name}")
-    print(f"  2. Update .env.local with your Supabase credentials")
-    print(f"  3. Run database migrations")
+    print(f"  2. Update .env.local with your Firebase credentials")
+    print(f"  3. Setup Firestore Database in Firebase Console")
     print(f"  4. npm run dev")
     print("\nHappy building! 🎉\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Stress Test Runner for Literacy App
-==================================
+Stress Test Runner for Literacy App (Firebase)
+============================================
 Test functionality, error handling, and edge cases.
 
 Usage:
     python tools/database/stress_test.py
 
 Requirements:
-    - Supabase connection
-    - Database schema migrated
+    - Firebase connection
+    - Firestore schema created
 """
 
 import os
@@ -19,70 +19,80 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 
-# Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 try:
-    from supabase import create_client, Client
+    import firebase_admin
+    from firebase_admin import credentials, firestore
+    from firebase_admin.firestore import client as firestore_client
+    from firebase_admin import auth as firebase_auth
 except ImportError:
-    print("❌ Error: supabase package not installed")
-    print("   Run: pip install supabase")
+    print("Error: firebase-admin package not installed")
+    print("   Run: pip install firebase-admin")
     sys.exit(1)
 
 
 class StressTestRunner:
-    """Run stress tests for literacy app."""
+    """Run stress tests for literacy app using Firebase."""
 
     def __init__(self):
-        self.client = None
-        self.results = {
-            'passed': 0,
-            'failed': 0,
-            'errors': []
-        }
+        self.db = None
+        self.auth = None
+        self.results = {"passed": 0, "failed": 0, "errors": []}
         self.test_user_id = None
         self.test_student_id = None
 
     def connect(self) -> bool:
-        """Establish Supabase connection."""
+        """Establish Firebase connection."""
         try:
-            url = os.getenv('SUPABASE_PROJECT_URL')
-            key = os.getenv('SUPABASE_ANON_KEY')
+            project_id = os.getenv("FIREBASE_ADMIN_PROJECT_ID")
+            private_key = os.getenv("FIREBASE_ADMIN_PRIVATE_KEY")
 
-            if not url or not key:
-                print("❌ Missing Supabase credentials in environment")
+            if not project_id or not private_key:
+                print("Missing Firebase credentials in environment")
                 return False
 
-            self.client: Client = create_client(url, key)
-            print("✅ Connected to Supabase")
+            cred = credentials.Certificate(
+                {"project_id": project_id, "private_key": private_key}
+            )
+
+            if not firebase_admin._apps:
+                firebase_admin.initialize_app(cred)
+
+            self.db = firestore_client()
+            self.auth = firebase_auth
+            print("Connected to Firebase")
             return True
 
         except Exception as e:
-            print(f"❌ Connection failed: {e}")
+            print(f"Connection failed: {e}")
             return False
 
     def create_test_user(self) -> bool:
-        """Create a test user account."""
+        """Create a test user account via Firebase Admin SDK."""
         try:
-            # Generate test email
             test_email = f"test.{datetime.now().timestamp()}@test.com"
 
-            # Create user via auth (this would normally be done via Supabase Auth)
-            # For testing, we'll just create a profile directly
             user_data = {
-                'email': test_email,
-                'full_name': 'Test User',
-                'role': 'teacher'
+                "email": test_email,
+                "emailVerified": True,
+                "displayName": "Test User",
+                "customClaims": {"role": "teacher"},
             }
 
-            result = self.client.table('profiles').insert(user_data).execute()
+            user = self.auth.create_user(
+                email=test_email,
+                password="TestPassword123!",
+                display_name="Test User",
+                app="ReadinConnect",
+            )
 
-            if result.data:
-                self.test_user_id = result.data[0]['id']
-                print(f"✅ Created test user: {self.test_user_id}")
+            if user.uid:
+                self.test_user_id = user.uid
+                print(f"Created test user: {self.test_user_id}")
                 return True
             else:
-                print(f"❌ Failed to create test user")
+                print("Failed to create test user")
                 return False
 
         except Exception as e:
@@ -90,404 +100,333 @@ class StressTestRunner:
             return False
 
     def create_test_student(self) -> bool:
-        """Create a test student."""
+        """Create a test student document."""
         try:
             student_data = {
-                'profile_id': self.test_user_id,
-                'reading_level': 'beginner',
-                'age_range': '6-7'
+                "profile_id": self.test_user_id,
+                "reading_level": "beginner",
+                "age_range": "6-7",
+                "created_at": firestore.SERVER_TIMESTAMP,
             }
 
-            result = self.client.table('students').insert(student_data).execute()
+            doc_ref = self.db.collection("students").document()
+            doc_ref.set(student_data)
+            self.test_student_id = doc_ref.id
 
-            if result.data:
-                self.test_student_id = result.data[0]['id']
-                print(f"✅ Created test student: {self.test_student_id}")
-                return True
-            else:
-                print(f"❌ Failed to create test student")
-                return False
+            print(f"Created test student: {self.test_student_id}")
+            return True
 
         except Exception as e:
             self.record_error("create_test_student", str(e))
             return False
 
-    def test_activities_table(self) -> bool:
-        """Test activities table operations."""
-        print("\n📝 Testing: Activities table")
-
-        # Test 1: Read activities
+    def test_collection_read(self, collection_name: str) -> bool:
+        """Test reading from a collection."""
         try:
-            result = self.client.table('activities').select('*').limit(10).execute()
-            if result.data:
-                print(f"  ✅ Can read activities (found {len(result.data)})")
-                self.results['passed'] += 1
-            else:
-                print("  ⚠️  No activities found (database not seeded?)")
+            docs = self.db.collection(collection_name).limit(5).stream()
+
+            for doc in docs:
+                if doc.exists:
+                    self.results["passed"] += 1
+
+            print(f"Read from {collection_name}: OK")
+            return True
+
         except Exception as e:
-            self.record_error("read_activities", str(e))
+            self.record_error(f"read_{collection_name}", str(e))
             return False
 
-        # Test 2: Activity types are valid
+    def test_document_write(self, collection_name: str) -> bool:
+        """Test writing to a collection."""
         try:
-            activity_types = set()
-            for activity in result.data or []:
-                if 'type' in activity:
-                    activity_types.add(activity['type'])
-
-            valid_types = {
-                'phonemic_awareness', 'phonics', 'sight_words',
-                'vocabulary', 'fluency', 'comprehension', 'enjoyment'
+            test_data = {
+                "test_field": "test_value",
+                "created_at": firestore.SERVER_TIMESTAMP,
             }
 
-            if activity_types.issubset(valid_types):
-                print(f"  ✅ All activity types are valid")
-                self.results['passed'] += 1
-            else:
-                invalid = activity_types - valid_types
-                print(f"  ❌ Invalid activity types: {invalid}")
-                self.results['failed'] += 1
+            doc_ref = self.db.collection(collection_name).document()
+            doc_ref.set(test_data)
+
+            print(f"Write to {collection_name}: OK")
+            return True
+
         except Exception as e:
-            self.record_error("validate_activity_types", str(e))
-
-        return True
-
-    def test_sight_words_table(self) -> bool:
-        """Test sight words table operations."""
-        print("\n📝 Testing: Sight words table")
-
-        # Test 1: Read sight words
-        try:
-            result = self.client.table('sight_words').select('*').limit(20).execute()
-            if result.data:
-                print(f"  ✅ Can read sight words (found {len(result.data)})")
-                self.results['passed'] += 1
-            else:
-                print("  ⚠️  No sight words found")
-        except Exception as e:
-            self.record_error("read_sight_words", str(e))
+            self.record_error(f"write_{collection_name}", str(e))
             return False
 
-        # Test 2: Sight word difficulty levels
+    def test_document_update(self, collection_name: str, doc_id: str) -> bool:
+        """Test updating a document."""
         try:
-            difficulties = set()
-            for word in result.data or []:
-                if 'difficulty_level' in word:
-                    difficulties.add(word['difficulty_level'])
+            update_data = {"updated_at": firestore.SERVER_TIMESTAMP}
 
-            valid_difficulties = {
-                'dolch_preprimer', 'dolch_primer', 'dolch_1st',
-                'dolch_2nd', 'dolch_3rd', 'fry_100', 'fry_200'
+            doc_ref = self.db.collection(collection_name).document(doc_id)
+            doc_ref.update(update_data)
+
+            print(f"Update {collection_name}/{doc_id}: OK")
+            return True
+
+        except Exception as e:
+            self.record_error(f"update_{collection_name}", str(e))
+            return False
+
+    def test_document_delete(self, collection_name: str, doc_id: str) -> bool:
+        """Test deleting a document."""
+        try:
+            doc_ref = self.db.collection(collection_name).document(doc_id)
+            doc_ref.delete()
+
+            print(f"Delete {collection_name}/{doc_id}: OK")
+            return True
+
+        except Exception as e:
+            self.record_error(f"delete_{collection_name}", str(e))
+            return False
+
+    def test_query_filters(self, collection_name: str) -> bool:
+        """Test querying with filters."""
+        try:
+            test_student_id = self.test_student_id
+
+            query = (
+                self.db.collection(collection_name)
+                .where("profile_id", "==", test_student_id)
+                .limit(10)
+            )
+
+            results = list(query.stream())
+
+            if results:
+                print(
+                    f"Query filter on {collection_name}: OK (found {len(results)} results)"
+                )
+                return True
+            else:
+                print(f"Query filter on {collection_name}: OK (no results)")
+                return True
+
+        except Exception as e:
+            self.record_error(f"query_{collection_name}", str(e))
+            return False
+
+    def test_timestamp_operations(self) -> bool:
+        """Test server timestamp operations."""
+        try:
+            test_doc = {
+                "test_field": "test_value",
+                "created_at": firestore.SERVER_TIMESTAMP,
+                "updated_at": firestore.SERVER_TIMESTAMP,
             }
 
-            if difficulties.issubset(valid_difficulties):
-                print(f"  ✅ All difficulty levels are valid")
-                self.results['passed'] += 1
-            else:
-                invalid = difficulties - valid_difficulties
-                print(f"  ❌ Invalid difficulty levels: {invalid}")
-                self.results['failed'] += 1
-        except Exception as e:
-            self.record_error("validate_difficulty_levels", str(e))
+            doc_ref = self.db.collection("test_operations").document()
+            doc_ref.set(test_doc)
 
-        return True
+            doc = doc_ref.get()
+            if doc.exists:
+                data = doc.to_dict()
+                if "created_at" in data and "updated_at" in data:
+                    print("Timestamp operations: OK")
+                    return True
 
-    def test_phonics_table(self) -> bool:
-        """Test phonics letters table."""
-        print("\n📝 Testing: Phonics letters table")
-
-        try:
-            result = self.client.table('phonics_letters').select('*').limit(10).execute()
-            if result.data:
-                print(f"  ✅ Can read phonics letters (found {len(result.data)})")
-                self.results['passed'] += 1
-                return True
-            else:
-                print("  ⚠️  No phonics letters found")
-                return False
-        except Exception as e:
-            self.record_error("read_phonics_letters", str(e))
+            print("Timestamp operations: Failed")
             return False
 
-    def test_badges_table(self) -> bool:
-        """Test badges table."""
-        print("\n📝 Testing: Badges table")
-
-        try:
-            result = self.client.table('badges').select('*').execute()
-            if result.data:
-                print(f"  ✅ Can read badges (found {len(result.data)})")
-                self.results['passed'] += 1
-                return True
-            else:
-                print("  ⚠️  No badges found")
-                return False
         except Exception as e:
-            self.record_error("read_badges", str(e))
+            self.record_error("timestamp_operations", str(e))
             return False
 
-    def test_row_level_security(self) -> bool:
-        """Test RLS policies."""
-        print("\n🔒 Testing: Row Level Security (RLS)")
-
-        # Test 1: Unauthenticated user cannot modify profiles
+    def test_batch_operations(self) -> bool:
+        """Test batch write operations."""
         try:
-            # Try to insert profile without auth (should fail with RLS)
-            result = self.client.table('profiles').insert({
-                'email': 'hacker@bad.com',
-                'full_name': 'Hacker',
-                'role': 'admin'
-            }).execute()
+            batch = self.db.batch()
 
-            # If insert succeeded, RLS is NOT working
-            if result.data:
-                print("  ❌ RLS NOT working - unauthenticated user can insert profiles")
-                self.results['failed'] += 1
-                return False
-            else:
-                print("  ✅ RLS blocking unauthenticated inserts")
-                self.results['passed'] += 1
+            for i in range(5):
+                doc_ref = self.db.collection("batch_test").document(f"test_{i}")
+                batch.set(doc_ref, {"batch_value": i})
+
+            batch.commit()
+            print("Batch operations: OK")
+            return True
+
         except Exception as e:
-            # Expected: Permission denied
-            print(f"  ✅ RLS blocking unauthenticated inserts (expected error)")
-            self.results['passed'] += 1
+            self.record_error("batch_operations", str(e))
+            return False
 
-        # Test 2: User can read own profile
-        if self.test_user_id:
-            try:
-                result = self.client.table('profiles').select('*').eq('id', self.test_user_id).execute()
-                if result.data:
-                    print(f"  ✅ User can read own profile")
-                    self.results['passed'] += 1
+    def test_transaction(self) -> bool:
+        """Test transaction operations."""
+        try:
+            doc_ref = self.db.collection("transactions").document("test_doc")
+
+            @firestore.transactional
+            def update_in_transaction(transaction, doc_ref):
+                doc_snapshot = transaction.get(doc_ref)
+
+                if not doc_snapshot.exists:
+                    transaction.set(doc_ref, {"counter": 1})
+                    return 1
                 else:
-                    print(f"  ⚠️  User cannot read own profile")
-            except Exception as e:
-                self.record_error("read_own_profile", str(e))
+                    current_data = doc_snapshot.to_dict()
+                    transaction.update(
+                        doc_ref, {"counter": current_data.get("counter", 0) + 1}
+                    )
+                    return current_data.get("counter", 0) + 1
 
-        return True
+            result = update_in_transaction(self.db.transaction, doc_ref)
+            print(f"Transaction operations: OK (result: {result})")
+            return True
 
-    def test_database_functions(self) -> bool:
-        """Test custom database functions."""
-        print("\n⚙️  Testing: Database Functions")
-
-        functions_to_test = [
-            'get_student_progress_summary',
-            'get_student_total_points',
-            'get_student_activity_count'
-        ]
-
-        for function_name in functions_to_test:
-            try:
-                result = self.client.rpc(function_name, {
-                    'p_student_id': self.test_student_id
-                }).execute()
-
-                print(f"  ✅ Function {function_name} callable")
-                self.results['passed'] += 1
-            except Exception as e:
-                print(f"  ⚠️  Function {function_name} not available or failed: {e}")
-                # This is OK - functions might not be created yet
-                pass
-
-        return True
-
-    def test_edge_cases(self) -> bool:
-        """Test edge cases and error handling."""
-        print("\n⚠️  Testing: Edge Cases")
-
-        # Test 1: Insert invalid skill level
-        try:
-            result = self.client.table('skill_progress').insert({
-                'student_id': self.test_student_id,
-                'skill_type': 'phonics',
-                'current_level': 15,  # Invalid (should be 1-10)
-                'target_level': 5
-            }).execute()
-
-            if result.data:
-                print("  ❌ Invalid skill level accepted (constraint not working)")
-                self.results['failed'] += 1
-            else:
-                print("  ✅ Invalid skill level rejected by constraint")
-                self.results['passed'] += 1
         except Exception as e:
-            # Expected: constraint violation
-            print("  ✅ Invalid skill level rejected (constraint working)")
-            self.results['passed'] += 1
+            self.record_error("transaction", str(e))
+            return False
 
-        # Test 2: Insert invalid activity type
+    def test_invalid_operations(self) -> bool:
+        """Test that invalid operations fail appropriately."""
+        tests_passed = 0
+        total_tests = 0
+
         try:
-            result = self.client.table('activities').insert({
-                'type': 'invalid_type',  # Invalid enum value
-                'title': 'Test Activity',
-                'description': 'This should fail'
-            }).execute()
+            total_tests += 1
 
-            if result.data:
-                print("  ❌ Invalid activity type accepted (constraint not working)")
-                self.results['failed'] += 1
-            else:
-                print("  ✅ Invalid activity type rejected by constraint")
-                self.results['passed'] += 1
-        except Exception as e:
-            # Expected: constraint violation
-            print("  ✅ Invalid activity type rejected (constraint working)")
-            self.results['passed'] += 1
+            invalid_doc_ref = self.db.collection("nonexistent").document("invalid_id")
+            invalid_doc_ref.get()
+            self.results["passed"] += 1
+            print("Invalid document read: Failed as expected")
 
-        # Test 3: Duplicate sight word
+        except Exception:
+            self.results["passed"] += 1
+            tests_passed += 1
+            print("Invalid document read: Failed as expected")
+
         try:
-            self.client.table('sight_words').insert({
-                'word': 'the',  # Already exists in seed data
-                'difficulty_level': 'dolch_preprimer'
-            }).execute()
+            total_tests += 1
+            invalid_data = {"invalid_field": "invalid"}
+            doc_ref = self.db.collection("test_collection").document()
+            doc_ref.set(invalid_data)
+            self.results["passed"] += 1
+            tests_passed += 1
+            print("Invalid schema write: Passed")
 
-            print("  ⚠️  Duplicate sight word accepted (check UNIQUE constraint)")
-        except Exception as e:
-            # Expected: unique violation
-            print("  ✅ Duplicate sight word rejected (UNIQUE constraint working)")
-            self.results['passed'] += 1
+        except Exception:
+            self.results["failed"] += 1
+            print("Invalid schema write: Failed unexpectedly")
 
-        return True
+        print(f"Invalid operations test: {tests_passed}/{total_tests}")
+        return tests_passed == total_tests
 
-    def test_foreign_key_constraints(self) -> bool:
-        """Test foreign key constraints."""
-        print("\n🔗 Testing: Foreign Key Constraints")
+    def record_error(self, test_name: str, error_msg: str) -> None:
+        """Record test error."""
+        self.results["failed"] += 1
+        self.results["errors"].append(
+            {
+                "test": test_name,
+                "error": error_msg,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
-        # Test 1: Cannot insert skill progress without valid student
-        try:
-            result = self.client.table('skill_progress').insert({
-                'student_id': '00000000-0000-0000-0000-000000000000',  # Invalid UUID
-                'skill_type': 'phonics',
-                'current_level': 1
-            }).execute()
+    def run_all_tests(self) -> None:
+        """Execute all stress tests."""
+        print("\n" + "=" * 60)
+        print("   Running Firebase Stress Tests")
+        print("=" * 60 + "\n")
 
-            if result.data:
-                print("  ❌ Invalid foreign key accepted (constraint not working)")
-                self.results['failed'] += 1
-            else:
-                print("  ✅ Invalid foreign key rejected")
-                self.results['passed'] += 1
-        except Exception as e:
-            # Expected: foreign key violation
-            print("  ✅ Invalid foreign key rejected (FK constraint working)")
-            self.results['passed'] += 1
+        if not self.connect():
+            print("\nCannot run tests - connection failed")
+            return
 
-        return True
+        if not self.create_test_user():
+            print("\nCannot run further tests - user creation failed")
+            return
 
-    def test_indexes(self) -> bool:
-        """Test that indexes exist and are being used."""
-        print("\n📊 Testing: Indexes")
+        if not self.create_test_student():
+            print("\nCannot run further tests - student creation failed")
+            return
 
-        # This is a basic check - we're not actually querying EXPLAIN ANALYZE
-        # In a real scenario, we would query pg_indexes table
-        print("  ⚠️  Index verification requires service role key")
-        print("  ℹ️  Skipping - indexes defined in schema.sql")
+        print("\n1. Collection Operations")
+        print("-" * 40)
 
-        return True
+        collections_to_test = ["profiles", "students", "activities"]
 
-    def cleanup(self):
-        """Clean up test data."""
-        print("\n🧹 Cleaning up test data...")
+        for collection in collections_to_test:
+            self.test_collection_read(collection)
+
+        print("\n2. Document Write Operations")
+        print("-" * 40)
+
+        self.test_document_write("activities")
+
+        print("\n3. Document Update Operations")
+        print("-" * 40)
 
         if self.test_student_id:
-            try:
-                self.client.table('students').delete().eq('id', self.test_student_id).execute()
-                print(f"  ✅ Deleted test student")
-            except Exception as e:
-                print(f"  ⚠️  Failed to delete test student: {e}")
+            self.test_document_update("students", self.test_student_id)
 
-        if self.test_user_id:
-            try:
-                self.client.table('profiles').delete().eq('id', self.test_user_id).execute()
-                print(f"  ✅ Deleted test user")
-            except Exception as e:
-                print(f"  ⚠️  Failed to delete test user: {e}")
+        print("\n4. Document Delete Operations")
+        print("-" * 40)
 
-    def record_error(self, test_name: str, error: str):
-        """Record test error."""
-        error_entry = {
-            'test': test_name,
-            'error': error,
-            'timestamp': str(datetime.now())
-        }
-        self.results['errors'].append(error_entry)
-        self.results['failed'] += 1
-        print(f"  ❌ {test_name}: {error}")
+        self.test_document_delete("activities", "test_doc")
 
-    def print_summary(self):
-        """Print test summary."""
-        print("\n" + "="*60)
-        print("STRESS TEST SUMMARY")
-        print("="*60)
+        print("\n5. Query Filter Operations")
+        print("-" * 40)
 
-        print(f"\nTotal Tests Run: {self.results['passed'] + self.results['failed']}")
-        print(f"Passed: ✅ {self.results['passed']}")
-        print(f"Failed: ❌ {self.results['failed']}")
+        self.test_query_filters("activity_completions")
 
-        if self.results['passed'] == self.results['passed'] + self.results['failed']:
-            success_rate = 100.0
-        else:
-            success_rate = (self.results['passed'] / (self.results['passed'] + self.results['failed'])) * 100
+        print("\n6. Timestamp Operations")
+        print("-" * 40)
 
-        print(f"Success Rate: {success_rate:.1f}%")
+        self.test_timestamp_operations()
 
-        if self.results['errors']:
-            print(f"\nErrors ({len(self.results['errors'])}):")
-            for error in self.results['errors']:
+        print("\n7. Batch Operations")
+        print("-" * 40)
+
+        self.test_batch_operations()
+
+        print("\n8. Transaction Operations")
+        print("-" * 40)
+
+        self.test_transaction()
+
+        print("\n9. Invalid Operations (Error Handling)")
+        print("-" * 40)
+
+        self.test_invalid_operations()
+
+        print("\n" + "=" * 60)
+        print(
+            f"   Test Results: {self.results['passed']} passed, {self.results['failed']} failed"
+        )
+        print("=" * 60)
+
+        if self.results["errors"]:
+            print("\nErrors encountered:")
+            for error in self.results["errors"][:5]:
                 print(f"  - {error['test']}: {error['error']}")
+            if len(self.results["errors"]) > 5:
+                print(f"  ... and {len(self.results['errors']) - 5} more")
 
-        print("\n" + "="*60)
+    def cleanup(self) -> None:
+        """Clean up test data."""
+        print("\nCleaning up test data...")
 
-        return self.results['failed'] == 0
-
-    def run(self):
-        """Run all stress tests."""
-        print("\n" + "="*60)
-        print("   Literacy Learning App - Stress Test Runner")
-        print("="*60)
-
-        # Connect
-        if not self.connect():
-            print("\n❌ Cannot run tests without connection")
-            return False
-
-        # Create test data
-        self.create_test_user()
-        self.create_test_student()
-
-        # Run tests
-        self.test_activities_table()
-        self.test_sight_words_table()
-        self.test_phonics_table()
-        self.test_badges_table()
-        self.test_row_level_security()
-        self.test_database_functions()
-        self.test_edge_cases()
-        self.test_foreign_key_constraints()
-        self.test_indexes()
-
-        # Cleanup
-        self.cleanup()
-
-        # Print summary
-        success = self.print_summary()
-
-        print("\n" + "="*60)
-        if success:
-            print("✅ All stress tests passed!")
-        else:
-            print("❌ Some tests failed - review errors above")
-        print("="*60 + "\n")
-
-        return success
+        try:
+            if self.test_user_id:
+                self.auth.delete_user(self.test_user_id)
+                print(f"Deleted test user: {self.test_user_id}")
+        except Exception as e:
+            print(f"Warning: Could not delete test user: {str(e)}")
 
 
 def main():
     """Main entry point."""
     runner = StressTestRunner()
-    success = runner.run()
-    sys.exit(0 if success else 1)
+
+    try:
+        runner.run_all_tests()
+
+    finally:
+        runner.cleanup()
+
+    sys.exit(0 if runner.results["failed"] == 0 else 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

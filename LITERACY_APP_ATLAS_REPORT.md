@@ -10,7 +10,7 @@
 
 Successfully completed the ATLAS 5-step workflow to build a Literacy Learning Platform for ages 4-8 following the GOTCHA framework.
 
-**Tech Stack:** Next.js 14 + Tailwind CSS + Supabase (PostgreSQL)
+**Tech Stack:** Next.js 14 + Tailwind CSS + Firebase (Firestore, Auth, Storage)
 
 ---
 
@@ -27,7 +27,7 @@ Successfully completed the ATLAS 5-step workflow to build a Literacy Learning Pl
 ### ✅ T — TRACE
 - [x] Designed complete database schema (16 tables)
 - [x] Documented all relationships and constraints
-- [x] Mapped integrations: Supabase (DB, Auth, Storage), Web Speech API
+- [x] Mapped integrations: Firebase (Firestore, Auth, Storage), Web Speech API
 - [x] Proposed technology stack: Next.js, Tailwind, shadcn/ui, Zustand, React Query
 - [x] Documented edge cases: Offline, multi-device sync, large files, accessibility
 
@@ -39,7 +39,7 @@ Successfully completed the ATLAS 5-step workflow to build a Literacy Learning Pl
 - [x] Configured behavior settings in args file
 
 **Output:**
-- `tools/setup/validate_supabase.py` - Supabase connection tester
+- `tools/setup/validate_firebase.py` - Firebase connection tester
 - `args/literacy_app.yaml` - Full configuration file
 
 ### ✅ A — ASSEMBLE
@@ -84,7 +84,7 @@ args/
 tools/
 ├── manifest.md               # Updated with literacy app tools
 ├── setup/
-│   ├── validate_supabase.py  # Connection validator
+│   ├── validate_firebase.py  # Connection validator
 │   └── init_project.py       # Project initializer
 └── database/
     ├── schema.sql            # Complete schema (16 tables)
@@ -145,17 +145,16 @@ LITERACY_APP_IMPLEMENTATION.md  # Implementation guide (deprecated - see goals f
 # 1. Initialize Next.js project
 python tools/setup/init_project.py literacy-learning
 
-# 2. Configure Supabase
-# Get credentials from: https://supabase.com/dashboard
+# 2. Configure Firebase
+# Get credentials from: https://console.firebase.google.com/
 # Update .env.local with your keys
 
-# 3. Run database migrations
-python tools/database/migrate.py
-# Or use Supabase dashboard > SQL Editor
-# Copy content from: tools/database/schema.sql
+# 3. Set up Firestore collections
+# Go to Firebase Console > Firestore Database
+# Create collections manually or import from firebase/seed/
 
 # 4. Validate connection
-python tools/setup/validate_supabase.py
+python tools/setup/validate_firebase.py
 ```
 
 ### Phase 2: Development
@@ -187,9 +186,17 @@ npm run dev
 
 ### Environment Variables (.env.local)
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_key
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
+
+# Admin SDK (server-side only)
+FIREBASE_ADMIN_PROJECT_ID=your_project_id
+FIREBASE_ADMIN_CLIENT_EMAIL=your_service_account_email
+FIREBASE_ADMIN_PRIVATE_KEY=your_private_key
 ```
 
 ### Args File (args/literacy_app.yaml)
@@ -240,24 +247,24 @@ python tools/database/stress_test.py
 ## Architecture Highlights
 
 ### Separation of Concerns
-- **Database:** Supabase PostgreSQL (source of truth)
-- **Auth:** Supabase Auth (RLS-protected)
-- **Storage:** Supabase Storage (audio, PDFs)
+- **Database:** Firebase Firestore (NoSQL, real-time)
+- **Auth:** Firebase Authentication (multi-provider)
+- **Storage:** Firebase Storage (audio, PDFs, images)
 - **Frontend:** Next.js (UI + routing)
 - **State:** Zustand (client state)
 - **Server State:** React Query (data fetching)
 
 ### Security
-- RLS policies on all user data
-- Row-level isolation between students
+- Firestore Security Rules on all collections
+- Document-level isolation between students
 - Teacher can only access their students
-- Service role key for admin operations
+- Admin SDK for server-side operations
 
 ### Scalability
-- Indexed queries on all foreign keys
+- Composite indexes on frequently queried fields
 - Pagination support in tools
 - Async operations for performance
-- Connection pooling (Supabase managed)
+- Automatic scaling (Firebase managed)
 
 ---
 
@@ -310,17 +317,17 @@ python tools/database/stress_test.py
 
 ### Common Issues
 
-**Issue:** Supabase connection fails
-**Solution:** Check SUPABASE_PROJECT_URL and SUPABASE_ANON_KEY in .env.local
+**Issue:** Firebase connection fails
+**Solution:** Check Firebase configuration in .env.local
 
-**Issue:** Migrations fail
-**Solution:** Run via Supabase dashboard SQL Editor for visual feedback
+**Issue:** Firestore permission denied
+**Solution:** Check Firestore Security Rules and user authentication
 
-**Issue:** RLS blocking operations
-**Solution:** Use service role key for admin operations, or adjust RLS policies
+**Issue:** Storage upload fails
+**Solution:** Check Storage Security Rules and file size limits
 
 **Issue:** Tests fail
-**Solution:** Ensure database is migrated and seeded before running stress_test.py
+**Solution:** Ensure Firestore collections exist and are seeded before running stress_test.py
 
 ---
 

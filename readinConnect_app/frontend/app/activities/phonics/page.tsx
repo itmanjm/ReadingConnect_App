@@ -7,8 +7,9 @@ import { ArrowLeft, Volume2, RotateCcw, VolumeX, ChevronRight } from 'lucide-rea
 import { useRouter } from 'next/navigation'
 import { useGameSounds } from '@/lib/hooks/useGameSounds'
 import { ConfettiExplosion, StarBurst, CelebrationMessage } from '@/components/CelebrationEffects'
-import { usePhonemeAudio } from '@/lib/hooks/usePhonemeAudio'
 import { useProgress } from '@/lib/hooks/useProgress'
+import { speakPhoneme, getPhonemeInfo as getTTSPhonemeInfo, preloadVoices } from '@/lib/audio/ttsPhonics'
+import { useCVCWords, useCVCWordFamilies, CVCWord } from '@/lib/hooks/useCVCWords'
 
 const PHONICS_PHASES = [
   {
@@ -88,12 +89,18 @@ const EXAMPLE_WORDS: Record<string, { word: string; uses: string[] }> = {
 export default function PhonicsLetterHunt() {
   const router = useRouter()
   const { isMuted, toggleMute, playCorrect, playWrong, playStreak, playClick, playStart } = useGameSounds()
-  const { playPhoneme, playLetterExample, getPhonemeInfo } = usePhonemeAudio()
   const { progress, updatePhonicsProgress, getAgeAppropriateSettings, isLoaded } = useProgress()
+  const { words: cvcWords, loading: cvcLoading, error: cvcError } = useCVCWords('kindergarten', 100)
+  const { families: wordFamilies, loading: familiesLoading } = useCVCWordFamilies('kindergarten')
+
+  useEffect(() => {
+    preloadVoices()
+  }, [])
 
   const [currentPhase, setCurrentPhase] = useState(1)
   const [targetPhoneme, setTargetPhoneme] = useState('')
   const [targetLetter, setTargetLetter] = useState('')
+  const [targetWord, setTargetWord] = useState<CVCWord | null>(null)
   const [showLetter, setShowLetter] = useState(false)
   const [showPhoneme, setShowPhoneme] = useState(true)
   const [score, setScore] = useState(0)
@@ -105,8 +112,23 @@ export default function PhonicsLetterHunt() {
   const [gameActive, setGameActive] = useState(false)
 
   const settings = getAgeAppropriateSettings()
-
   const currentPhaseData = PHONICS_PHASES.find(p => p.id === currentPhase) || PHONICS_PHASES[0]
+
+  const getCVCWordForLetter = useCallback((letter: string): CVCWord | null => {
+    const lowerLetter = letter.toLowerCase()
+    const matchingWords = cvcWords.filter(w => 
+      w.letter1.toLowerCase() === lowerLetter ||
+      w.letter2.toLowerCase() === lowerLetter ||
+      w.letter3.toLowerCase() === lowerLetter
+    )
+    return matchingWords.length > 0 ? matchingWords[0] : null
+  }, [cvcWords])
+
+  const getWordFamilyForLetter = useCallback((letter: string) => {
+    const word = getCVCWordForLetter(letter)
+    if (!word) return null
+    return wordFamilies.find(f => f.family === word.word_family)
+  }, [getCVCWordForLetter, wordFamilies])
 
   const startGame = useCallback(() => {
     if (!currentPhaseData?.phonemes || currentPhaseData.phonemes.length === 0) {
@@ -123,8 +145,12 @@ export default function PhonicsLetterHunt() {
     const randomPhoneme = availablePhonemes[Math.floor(Math.random() * availablePhonemes.length)]
     setTargetPhoneme(randomPhoneme)
 
-    const phonemeInfo = getPhonemeInfo ? getPhonemeInfo(randomPhoneme) : null
-    setTargetLetter(phonemeInfo?.symbol?.toUpperCase() || randomPhoneme.toUpperCase())
+    const phonemeInfo = getTTSPhonemeInfo(randomPhoneme)
+    const letter = phonemeInfo?.symbol?.toUpperCase() || randomPhoneme.toUpperCase()
+    setTargetLetter(letter)
+
+    const cvcWord = getCVCWordForLetter(letter)
+    setTargetWord(cvcWord)
 
     setShowLetter(false)
     setShowPhoneme(true)
@@ -132,7 +158,7 @@ export default function PhonicsLetterHunt() {
     setShowStarBurst(false)
     setShowCelebrationMsg(false)
     setGameActive(true)
-  }, [currentPhase, progress])
+  }, [currentPhase, progress, getCVCWordForLetter])
 
   useEffect(() => {
     if (isLoaded) {
@@ -324,7 +350,14 @@ export default function PhonicsLetterHunt() {
                 <div className="flex justify-center gap-4">
                   {showPhoneme && (
                     <button
-                      onClick={() => playPhoneme(targetPhoneme, isMuted)}
+                      onClick={() => {
+                        if (!isMuted) {
+                          const phonemeInfo = getTTSPhonemeInfo(targetPhoneme)
+                          if (phonemeInfo) {
+                            speakPhoneme(targetPhoneme)
+                          }
+                        }
+                      }}
                       className="w-24 h-24 bg-[#FF6B6B] hover:bg-[#FF5252] rounded-3xl shadow-xl shadow-[#FF6B6B]/30 flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                     >
                       <Volume2 className="h-12 w-12 text-white" />
@@ -355,18 +388,23 @@ export default function PhonicsLetterHunt() {
                 </div>
               </div>
 
-              {EXAMPLE_WORDS[targetLetter] && (
+              {targetWord && (
                 <div className="bg-[#B8E0D2]/10 p-6 rounded-2xl">
                   <p className="text-sm text-[#8B7355] mb-3">
-                    The letter <strong>"{targetLetter}"</strong> makes the <span className="text-[#4ECDC4]">/æ/</span> sound in words like:
+                    The letter <strong>"{targetLetter}"</strong> is in words like:
                   </p>
                   <div className="flex flex-wrap justify-center gap-2">
-                    {EXAMPLE_WORDS[targetLetter].uses.map((word, idx) => (
-                      <span key={idx} className="bg-white px-3 py-1 rounded-lg text-sm text-[#5A4A42]">
-                        "{word}"
+                    {getWordFamilyForLetter(targetLetter)?.words.slice(0, 6).map((word, idx) => (
+                      <span key={idx} className="bg-white px-3 py-1 rounded-lg text-sm text-[#5A4A42] font-bold">
+                        "{word.word}"
                       </span>
                     ))}
                   </div>
+                  {getWordFamilyForLetter(targetLetter) && (
+                    <p className="text-xs text-[#4ECDC4] mt-3 text-center">
+                      📚 {getWordFamilyForLetter(targetLetter)!.family.toUpperCase()} word family
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -400,7 +438,7 @@ export default function PhonicsLetterHunt() {
                   {targetLetter}
                 </div>
                  <p className="text-2xl text-[#8B7355]">
-                  Great job! You found the <strong>{getPhonemeInfo(targetPhoneme)?.symbol || targetLetter}</strong> sound!
+                  Great job! You found the <strong>{getTTSPhonemeInfo(targetPhoneme)?.symbol || targetLetter}</strong> sound!
                 </p>
                 <Button
                   onClick={() => { playClick(); startGame(); }}

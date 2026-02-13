@@ -9,7 +9,7 @@
 
 **App Name:** Literacy Learning App (working title)
 **Target Users:** Students (ages 4-8), Teachers, Parents
-**Tech Stack:** Next.js 14 + Tailwind CSS + Supabase
+**Tech Stack:** Next.js 14 + Tailwind CSS + Firebase
 
 ---
 
@@ -30,7 +30,7 @@ npx create-next-app@latest literacy-app \
 cd literacy-app
 
 # Install dependencies
-npm install @supabase/supabase-js @supabase/ssr @supabase/auth-helpers-nextjs
+npm install firebase
 npm install @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-tabs
 npm install @radix-ui/react-progress @radix-ui/react-avatar @radix-ui/react-alert-dialog
 npm install lucide-react framer-motion zustand @tanstack/react-query
@@ -85,21 +85,18 @@ literacy-app/
 │       ├── PDFDownloader.tsx
 │       └── BadgeDisplay.tsx
 ├── lib/
-│   ├── supabase/
+│   ├── firebase/
 │   │   ├── client.ts
-│   │   ├── server.ts
-│   │   └── middleware.ts
+│   │   └── admin.ts
 │   ├── db/
 │   │   ├── schema.ts
 │   │   └── types.ts
 │   └── stores/
 │       ├── useAuthStore.ts
 │       └── useProgressStore.ts
-├── supabase/
-│   ├── migrations/
-│   │   └── 001_initial_schema.sql
-│   └── seed/
-│       └── sample_activities.sql
+├── firebase/
+│   ├── firestore.rules
+│   └── indexes.json
 ├── public/
 │   ├── audio/
 │   └── images/
@@ -113,16 +110,19 @@ literacy-app/
 ## Environment Variables (.env.local)
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 ```
 
 ---
 
-## Database Schema (SQL)
+## Database Schema (Firestore Collections)
 
-Place in: `supabase/migrations/001_initial_schema.sql`
+Place in: `firebase/firestore.rules` or use Firebase Console to create collections:
 
 ```sql
 -- Enable UUID extension
@@ -483,7 +483,7 @@ CREATE TRIGGER update_observation_sheets_updated_at
 
 ## Sample Seed Data
 
-Place in: `supabase/seed/sample_activities.sql`
+Place in: `firebase/seed-data.json` or use Firebase Console to import JSON data:
 
 ```sql
 -- Insert sample activities
@@ -556,18 +556,345 @@ INSERT INTO public.badges (name, description, icon_url, category, criteria, poin
 
 ## Key Component Implementations
 
-### 1. Supabase Client Setup
+### 1. Firebase Client Setup
 
-`lib/supabase/client.ts`:
+`lib/firebase/client.ts`:
 ```typescript
-import { createBrowserClient } from '@supabase/ssr'
-import { Database } from '@/types/database'
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
+import { getAuth, Auth } from 'firebase/auth'
+import { getFirestore, Firestore } from 'firebase/firestore'
+import { getStorage, FirebaseStorage } from 'firebase/storage'
 
-export function createClient() {
-  return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+}
+
+// Initialize Firebase
+let app: FirebaseApp
+let auth: Auth
+let db: Firestore
+let storage: FirebaseStorage
+
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig)
+  auth = getAuth(app)
+  db = getFirestore(app)
+  storage = getStorage(app)
+} else {
+  app = getApps()[0]
+  auth = getAuth(app)
+  db = getFirestore(app)
+  storage = getStorage(app)
+}
+
+export { app, auth, db, storage }
+```
+
+### 1b. Firebase Admin Setup (Server-side)
+
+`lib/firebase/admin.ts`:
+```typescript
+import { getFirestore } from 'firebase-admin/firestore'
+import { getStorage } from 'firebase-admin/storage'
+import admin from 'firebase-admin'
+
+if (!admin.apps.length) {
+  const serviceAccount = {
+    projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  }
+
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  })
+}
+
+export const adminDb = getFirestore()
+export const adminStorage = getStorage()
+```
+
+### 2. Firebase Authentication Hook
+
+`lib/hooks/useAuth.ts`:
+```typescript
+'use client'
+
+import { useEffect, useState } from 'react'
+import { auth } from '@/lib/firebase/client'
+import {
+  User,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithGoogle,
+  GoogleAuthProvider,
+  signOut as firebaseSignOut,
+  onAuthStateChanged
+} from 'firebase/auth'
+
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user)
+      setLoading(false)
+    })
+    return unsubscribe
+  }, [])
+
+  const signIn = async (email: string, password: string) => {
+    return signInWithEmailAndPassword(auth, email, password)
+  }
+
+  const signUp = async (email: string, password: string) => {
+    return createUserWithEmailAndPassword(auth, email, password)
+  }
+
+  const signInWithGoogleProvider = async () => {
+    const provider = new GoogleAuthProvider()
+    return signInWithGoogle(auth, provider)
+  }
+
+  const signOut = async () => {
+    return firebaseSignOut(auth)
+  }
+
+  return {
+    user,
+    loading,
+    signIn,
+    signUp,
+    signInWithGoogle: signInWithGoogleProvider,
+    signOut,
+  }
+}
+```
+
+### 3. Firestore Database Helper
+
+`lib/db/firestore.ts`:
+```typescript
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  addDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  QueryConstraint,
+  DocumentData,
+  WithFieldValue
+} from 'firebase/firestore'
+import { db } from '@/lib/firebase/client'
+
+// Generic CRUD operations
+export const firestoreService = {
+  // Get single document
+  async getDoc<T = DocumentData>(collectionName: string, docId: string): Promise<T | null> {
+    const docRef = doc(db, collectionName, docId)
+    const docSnap = await getDoc(docRef)
+    return docSnap.exists() ? ({ id: docSnap.id, ...docSnap.data() } as T) : null
+  },
+
+  // Get all documents from collection
+  async getCollection<T = DocumentData>(
+    collectionName: string,
+    constraints: QueryConstraint[] = []
+  ): Promise<T[]> {
+    const collectionRef = collection(db, collectionName)
+    const q = query(collectionRef, ...constraints)
+    const querySnapshot = await getDocs(q)
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T))
+  },
+
+  // Create document with custom ID
+  async setDoc<T>(collectionName: string, docId: string, data: WithFieldValue<T>): Promise<void> {
+    const docRef = doc(db, collectionName, docId)
+    await setDoc(docRef, data)
+  },
+
+  // Create document with auto-generated ID
+  async addDoc<T>(collectionName: string, data: WithFieldValue<T>): Promise<string> {
+    const collectionRef = collection(db, collectionName)
+    const docRef = await addDoc(collectionRef, data)
+    return docRef.id
+  },
+
+  // Update document
+  async updateDoc<T>(collectionName: string, docId: string, data: Partial<T>): Promise<void> {
+    const docRef = doc(db, collectionName, docId)
+    await updateDoc(docRef, data)
+  },
+
+  // Delete document
+  async deleteDoc(collectionName: string, docId: string): Promise<void> {
+    const docRef = doc(db, collectionName, docId)
+    await deleteDoc(docRef)
+  },
+
+  // Query with constraints
+  async query<T = DocumentData>(
+    collectionName: string,
+    constraints: QueryConstraint[]
+  ): Promise<T[]> {
+    const collectionRef = collection(db, collectionName)
+    const q = query(collectionRef, ...constraints)
+    const querySnapshot = await getDocs(q)
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T))
+  },
+
+  // Real-time listener
+  onSnapshot<T = DocumentData>(
+    collectionName: string,
+    docId: string,
+    callback: (data: T | null) => void,
+    errorCallback?: (error: Error) => void
+  ): () => void {
+    const docRef = doc(db, collectionName, docId)
+    return onSnapshot(docRef, (doc) => {
+      if (doc.exists()) {
+        callback({ id: doc.id, ...doc.data() } as T)
+      } else {
+        callback(null)
+      }
+    }, errorCallback)
+  }
+}
+
+// Convenience query builders
+export const queryBuilder = {
+  where: (field: string, operator: any, value: any) => where(field, operator, value),
+  orderBy: (field: string, direction: 'asc' | 'desc' = 'asc') => orderBy(field, direction),
+  limit: (count: number) => limit(count),
+}
+```
+
+### 4. Firebase Storage Helper
+
+`lib/storage/storage.ts`:
+```typescript
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+  listAll
+} from 'firebase/storage'
+import { storage } from '@/lib/firebase/client'
+
+export const storageService = {
+  // Upload file
+  async uploadFile(
+    path: string,
+    file: File | Blob | Uint8Array
+  ): Promise<string> {
+    const storageRef = ref(storage, path)
+    await uploadBytes(storageRef, file)
+    return getDownloadURL(storageRef)
+  },
+
+  // Get download URL
+  async getDownloadUrl(path: string): Promise<string> {
+    const storageRef = ref(storage, path)
+    return getDownloadURL(storageRef)
+  },
+
+  // Delete file
+  async deleteFile(path: string): Promise<void> {
+    const storageRef = ref(storage, path)
+    await deleteObject(storageRef)
+  },
+
+  // List files in folder
+  async listFiles(path: string): Promise<string[]> {
+    const storageRef = ref(storage, path)
+    const result = await listAll(storageRef)
+    return result.items.map(item => item.name)
+  }
+}
+```
+
+### 5. Real-time Data Hook
+
+`lib/hooks/useFirestore.ts`:
+```typescript
+'use client'
+
+import { useEffect, useState } from 'react'
+import { onSnapshot, doc, collection, query, where, orderBy } from 'firebase/firestore'
+import { db } from '@/lib/firebase/client'
+
+export function useDocument<T>(collectionName: string, docId: string | null) {
+  const [data, setData] = useState<T | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    if (!docId) {
+      setLoading(false)
+      return
+    }
+
+    const unsubscribe = onSnapshot(
+      doc(db, collectionName, docId),
+      (doc) => {
+        setData(doc.exists() ? ({ id: doc.id, ...doc.data() } as T) : null)
+        setLoading(false)
+      },
+      (err) => {
+        setError(err)
+        setLoading(false)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [collectionName, docId])
+
+  return { data, loading, error }
+}
+
+export function useCollection<T>(
+  collectionName: string,
+  constraints: any[] = []
+) {
+  const [data, setData] = useState<T[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<Error | null>(null)
+
+  useEffect(() => {
+    const q = query(collection(db, collectionName), ...constraints)
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T))
+        setData(docs)
+        setLoading(false)
+      },
+      (err) => {
+        setError(err)
+        setLoading(false)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [collectionName, JSON.stringify(constraints)])
+
+  return { data, loading, error }
 }
 ```
 
