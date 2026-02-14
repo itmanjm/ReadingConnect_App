@@ -6,7 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:activities": "playwright test tests/activities/",
+    "test:e2e:badges": "playwright test tests/badges/",
+    "test:e2e:teachers": "playwright test tests/teachers/",
+    "emulators:start": "cd .. && firebase emulators:start --project readingconnect-lit",
+    "emulators:setup": "cd .. && firebase setup:emulators"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -31,6 +39,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -38,6 +47,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "googleapis": "^171.4.0",
+    "playwright": "^1.58.2",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
