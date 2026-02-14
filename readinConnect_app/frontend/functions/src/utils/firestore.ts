@@ -38,7 +38,7 @@ export const updateUserProgress = async (userId: string, updates: any) => {
   await updateDoc(`users/${userId}/progress`, 'phonics', updates);
 };
 
-export const getUserMasteryDoc = async (userId: string) => {
+export const getUserMasteryDoc = async (userId: string): Promise<any> => {
   return getDoc(`users/${userId}/progress`, 'phonics');
 };
 

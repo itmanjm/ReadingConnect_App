@@ -11,9 +11,9 @@ export const validateAuth = (context: any): string => {
   return context.auth.uid;
 };
 
-export const validateInput = <T extends Record<string, unknown>>(
+export const validateInput = <T>(
   data: unknown,
-  schema: Record<keyof T, string>
+  schema: Record<string, string>
 ): T => {
   if (!data || typeof data !== 'object') {
     throw new functions.https.HttpsError(

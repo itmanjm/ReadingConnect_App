@@ -63,11 +63,11 @@ export const processComprehensionAnswer = functions.https.onCall(
     };
 
     // Calculate overall accuracy
-    const totalCorrect = Object.values(currentProgress.accuracyByType).reduce(
+    const totalCorrect = currentProgress.accuracyByType ? Object.values(currentProgress.accuracyByType).reduce(
       (sum: number, type: any) => sum + type.correct, 
       0
     );
-    const totalQuestions = Object.values(currentProgress.accuracyByType).reduce(
+    const totalQuestions = currentProgress.accuracyByType ? Object.values(currentProgress.accuracyByType).reduce(
       (sum: number, type: any) => sum + type.total, 
       0
     );
@@ -75,12 +75,10 @@ export const processComprehensionAnswer = functions.https.onCall(
 
     // Determine level based on accuracy and question types
     let currentLevel = 1;
-    const literalAccuracy = currentProgress.accuracyByType.literal.total > 0 
-      ? currentProgress.accuracyByType.literal.correct / currentProgress.accuracyByType.literal.total 
-      : 0;
-    const inferentialAccuracy = currentProgress.accuracyByType.inferential.total > 0
-      ? currentProgress.accuracyByType.inferential.correct / currentProgress.accuracyByType.inferential.total
-      : 0;
+    const literalAccuracy = currentProgress.accuracyByType?.literal?.total > 0 
+      ? (currentProgress.accuracyByType?.literal?.correct || 0) / currentProgress.accuracyByType?.literal?.total : 0;
+    const inferentialAccuracy = currentProgress.accuracyByType?.inferential?.total > 0
+      ? (currentProgress.accuracyByType?.inferential?.correct || 0) / currentProgress.accuracyByType?.inferential?.total : 0;
     
     if (literalAccuracy >= 0.8 && inferentialAccuracy >= 0.7) {
       currentLevel = 3; // Advanced
@@ -100,10 +98,11 @@ export const processComprehensionAnswer = functions.https.onCall(
 
     return {
       isCorrect,
-      accuracyByType: currentProgress.accuracyByType,
+      accuracyByType: currentProgress.accuracyByType || {},
       overallAccuracy,
       currentLevel
     };
+  }
   }
 );
 

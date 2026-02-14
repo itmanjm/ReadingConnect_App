@@ -5,7 +5,7 @@ import { PHASE_DATA } from '../utils/scoring';
 import type { PhaseAccessResult } from '../types';
 
 export const checkPhaseUnlock = functions.https.onCall(
-  async (data: unknown, context: functions.https.CallableContext): Promise<PhaseAccessResult> => {
+  async (data: unknown, context: any): Promise<PhaseAccessResult> => {
     const uid = validateAuth(context);
     
     const { phaseId } = data as { phaseId?: number };

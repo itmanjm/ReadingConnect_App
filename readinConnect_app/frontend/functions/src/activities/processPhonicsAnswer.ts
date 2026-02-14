@@ -10,7 +10,7 @@ interface PhonicsAnswerData extends PhonicsAnswerInput {
 }
 
 export const processPhonicsAnswer = functions.https.onCall(
-  async (data: unknown, context: functions.https.CallableContext): Promise<PhonicsAnswerResult> => {
+  async (data: unknown, context: any): Promise<PhonicsAnswerResult> => {
     const uid = validateAuth(context);
     
     const { letter, selectedSound, phaseId } = validateInput<PhonicsAnswerData>(data, {
@@ -51,6 +51,8 @@ export const processPhonicsAnswer = functions.https.onCall(
     const masteryResult = calculateMasteryDelta(letter, isCorrect, currentMastery, phaseId);
     const newMastery = updateLetterMastery(currentMastery, isCorrect);
     
+    let phaseUnlocked: number | undefined;
+    
     await admin.firestore().runTransaction(async (transaction) => {
       const userProgressRef = admin.firestore().doc(`users/${uid}/progress/phonics`);
       
@@ -64,12 +66,14 @@ export const processPhonicsAnswer = functions.https.onCall(
       }, { merge: true });
       
       const currentPhase = phaseId;
-      const currentPhaseProgress = masteryDoc?.phases?.[currentPhase - 1];
+      const phases = masteryDoc?.phases || [];
+      const currentPhaseProgress = phases[currentPhase - 1];
       const newMasteredCount = masteryResult.newStatus === 'mastered' 
         ? (currentPhaseProgress?.masteredCount || 0) + 1 
         : currentPhaseProgress?.masteredCount || 0;
       
       if (newMasteredCount >= (phaseData.masteryThreshold || 2)) {
+        phaseUnlocked = phaseId + 1;
         transaction.set(userProgressRef, {
           [`phases.${currentPhase - 1}.completedAt`]: admin.firestore.FieldValue.serverTimestamp(),
           currentPhase: Math.max(masteryDoc?.currentPhase || 1, currentPhase + 1)
@@ -82,7 +86,7 @@ export const processPhonicsAnswer = functions.https.onCall(
       masteryLevel: masteryResult.newStatus === 'mastered' ? 5 : masteryResult.newStatus === 'learning' ? 3 : 1,
       newStatus: masteryResult.newStatus,
       achievements: [],
-      phaseUnlocked: masteryResult.newStatus === 'mastered' && newMasteredCount >= (phaseData.masteryThreshold || 2) ? phaseId + 1 : undefined
+      phaseUnlocked
     };
   }
 );

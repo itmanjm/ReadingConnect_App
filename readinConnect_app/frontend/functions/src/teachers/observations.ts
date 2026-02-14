@@ -6,14 +6,11 @@ export const createObservationSheet = functions.https.onCall(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
     
-    const { studentId, notes, skills } = validateInput<{
+    const { studentId, notes, skills } = data as {
       studentId: string;
       notes: string;
-      skills: Record<string, { observed: boolean; level: number; notes?: string }>;
-    }>(data, {
-      studentId: 'string',
-      notes: 'string'
-    });
+      skills?: Record<string, { observed: boolean; level: number; notes?: string }>;
+    };
 
     // Verify teacher has access to this student
     const teacherRef = admin.firestore().doc(`users/${uid}`);
@@ -46,13 +43,11 @@ export const updateObservationSheet = functions.https.onCall(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
     
-    const { observationId, notes, skills } = validateInput<{
+    const { observationId, notes, skills } = data as {
       observationId: string;
       notes?: string;
       skills?: Record<string, { observed: boolean; level: number; notes?: string }>;
-    }>(data, {
-      observationId: 'string'
-    });
+    };
 
     // Get observation sheet
     const observationRef = admin.firestore().doc(`observation_sheets/${observationId}`);
@@ -84,7 +79,7 @@ export const getObservationSheets = functions.https.onCall(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
     
-    const { studentId } = validateInput<{ studentId?: string }>(data, {});
+    const { studentId } = data as { studentId?: string };
 
     // Build query
     let query: admin.firestore.Query = admin.firestore().collection('observation_sheets');

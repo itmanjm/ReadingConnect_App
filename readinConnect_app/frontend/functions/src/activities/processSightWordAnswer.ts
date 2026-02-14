@@ -63,8 +63,7 @@ export const processSightWordAnswer = functions.https.onCall(
     let isMastered = false;
     let newLevelUnlocked = false;
     
-    if (wordProgress.consecutiveCorrect >= MASTERY_THRESHOLD && 
-        !currentProgress.masteredWords[level].includes(word)) {
+    if (wordProgress.consecutiveCorrect >= MASTERY_THRESHOLD && currentProgress.masteredWords && !currentProgress.masteredWords[level].includes(word)) {
       isMastered = true;
       wordProgress.status = 'mastered';
       
@@ -74,7 +73,7 @@ export const processSightWordAnswer = functions.https.onCall(
       
       // Check if level is complete (mastered 80% of words)
       const totalWordsInLevel = getTotalWordsInLevel(level);
-      const masteryPercentage = currentProgress.masteredWords[level].length / totalWordsInLevel;
+      const masteryPercentage = currentProgress.masteredWords[level]?.length / totalWordsInLevel;
       
       if (masteryPercentage >= 0.8) {
         const nextLevelIndex = SIGHT_WORD_LEVELS.indexOf(level as any) + 1;
