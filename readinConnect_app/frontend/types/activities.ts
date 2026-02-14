@@ -19,12 +19,16 @@ export interface PhonicsAnswerResult {
 export interface SightWordAnswerInput {
   word: string
   level: 'pre-primer' | 'primer' | 'grade-1' | 'grade-2'
+  isCorrect: boolean
 }
 
 export interface SightWordAnswerResult {
   isCorrect: boolean
   isMastered: boolean
   consecutiveCorrect: number
+  totalAttempts: number
+  newLevelUnlocked: boolean
+  achievements: string[]
 }
 
 export interface FluencySessionInput {
@@ -40,6 +44,7 @@ export interface FluencySessionResult {
   accuracy: number
   isImprovement: boolean
   previousWpm?: number
+  currentLevel: number
 }
 
 export interface ComprehensionQuestionInput {
@@ -56,6 +61,8 @@ export interface ComprehensionAnswerResult {
     inferential: { correct: number; total: number }
     evaluative: { correct: number; total: number }
   }
+  overallAccuracy: number
+  currentLevel: number
 }
 
 export interface ActivitySession {
