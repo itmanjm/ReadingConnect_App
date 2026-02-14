@@ -3,20 +3,8 @@
 import { useState, useEffect } from 'react'
 import { ArrowLeft, Users, BookOpen, Trophy, Calendar, TrendingUp, FileText, Settings, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { collection, query, where, onSnapshot, doc, updateDoc, getDocs } from 'firebase/firestore'
-import { db } from '@/lib/firebase/auth'
-
-interface Student {
-  id: string
-  email: string
-  full_name?: string
-  current_reading_level?: string
-  total_points?: number
-  badges_earned?: number
-  activities_completed?: number
-  streak_days?: number
-  created_at?: Date
-}
+import { useTeacherStudents } from '@/lib/hooks/useTeachers'
+import type { Student } from '@/lib/api/teachers'
 
 interface ClassStats {
   totalStudents: number
@@ -27,8 +15,8 @@ interface ClassStats {
 
 export default function TeacherDashboard() {
   const router = useRouter()
+  const { data: teacherData, isLoading: loading } = useTeacherStudents()
   const [students, setStudents] = useState<Student[]>([])
-  const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<ClassStats>({
     totalStudents: 0,
     averageProgress: 0,
@@ -37,32 +25,20 @@ export default function TeacherDashboard() {
   })
 
   useEffect(() => {
-    const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'))
-    
-    const unsubscribe = onSnapshot(studentsQuery, (snapshot) => {
-      const studentsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Student))
+    if (teacherData?.students) {
+      setStudents(teacherData.students)
 
-      setStudents(studentsData)
-
-      const totalPoints = studentsData.reduce((sum, s) => sum + (s.total_points || 0), 0)
-      const totalActivities = studentsData.reduce((sum, s) => sum + (s.activities_completed || 0), 0)
-      const totalBadges = studentsData.reduce((sum, s) => sum + (s.badges_earned || 0), 0)
+      const totalPoints = teacherData.students.reduce((sum: number, s: Student) => sum + (s.progress?.totalPoints || 0), 0)
+      const totalActivities = teacherData.students.reduce((sum: number, s: Student) => sum + (s.activities_completed || 0), 0)
 
       setStats({
-        totalStudents: studentsData.length,
-        averageProgress: studentsData.length > 0 ? Math.round(totalPoints / studentsData.length) : 0,
+        totalStudents: teacherData.students.length,
+        averageProgress: teacherData.students.length > 0 ? Math.round(totalPoints / teacherData.students.length) : 0,
         mostActiveLevel: 'kindergarten',
         totalActivities: totalActivities
       })
-
-      setLoading(false)
-    })
-
-    return () => unsubscribe()
-  }, [])
+    }
+  }, [teacherData])
 
   const getLevelName = (levelId?: string): string => {
     const names: Record<string, string> = {

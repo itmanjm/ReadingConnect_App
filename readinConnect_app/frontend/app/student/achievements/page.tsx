@@ -3,19 +3,10 @@
 import { useState, useEffect } from 'react'
 import { ArrowLeft, Trophy, Flame, Star, Target, Gift, BookOpen, Award } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { collection, query, where, getDocs } from 'firebase/firestore'
-import { db } from '@/lib/firebase/auth'
 import { useAuthStore } from '@/lib/stores/auth'
+import { useUserBadges } from '@/lib/hooks/useBadges'
 import { ConfettiExplosion, StarBurst, CelebrationMessage, MilestoneProgress, AchievementCard, AchievementCelebration } from '@/components/CelebrationEffects'
-
-interface Achievement {
-  id: string
-  title: string
-  description: string
-  icon: string
-  points: number
-  unlockedAt?: any
-}
+import type { Badge, BadgeProgress } from '@/lib/api/badges'
 
 interface StudentStats {
   totalPoints: number
@@ -43,6 +34,7 @@ const milestoneGoals = [
 export default function StudentAchievements() {
   const router = useRouter()
   const { user } = useAuthStore()
+  const { data: badgesData, isLoading: loading } = useUserBadges()
   const [stats, setStats] = useState<StudentStats>({
     totalPoints: 0,
     badgesEarned: 0,
@@ -52,57 +44,30 @@ export default function StudentAchievements() {
     sightWordsMastered: 0,
     fluencyWPM: 0
   })
-  const [achievements, setAchievements] = useState<Achievement[]>([])
-  const [loading, setLoading] = useState(true)
+  const [achievements, setAchievements] = useState<Badge[]>([])
   const [showConfetti, setShowConfetti] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
-  const [celebrationAchievement, setCelebrationAchievement] = useState<Achievement | null>(null)
+  const [celebrationAchievement, setCelebrationAchievement] = useState<Badge | null>(null)
   const [activeTab, setActiveTab] = useState<'milestones' | 'achievements' | 'badges'>('milestones')
 
   useEffect(() => {
-    async function fetchData() {
-      if (!user?.uid) return
+    if (badgesData) {
+      setStats(prev => ({
+        ...prev,
+        totalPoints: badgesData.totalPoints,
+        badgesEarned: badgesData.badges.length
+      }))
+      
+      setAchievements(badgesData.badges)
 
-      try {
-        const userDoc = await getDocs(query(collection(db, 'users'), where('__name__', '==', user.uid)))
-        if (!userDoc.empty) {
-          const userData = userDoc.docs[0].data()
-          setStats({
-            totalPoints: userData.total_points || 0,
-            badgesEarned: userData.badges_earned || 0,
-            activitiesCompleted: userData.activities_completed || 0,
-            streakDays: userData.streak_days || 0,
-            phonicsMastered: userData.phonics_mastered?.length || 0,
-            sightWordsMastered: userData.sight_words_mastered || 0,
-            fluencyWPM: userData.fluency_wpm || 0
-          })
-        }
-
-        const achievementsSnap = await getDocs(collection(db, 'users', user.uid, 'achievements'))
-        const unlockedAchievements = achievementsSnap.docs
-          .filter(doc => doc.data().unlockedAt)
-          .map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as Achievement))
-
-        setAchievements(unlockedAchievements)
-
-        if (unlockedAchievements.length > achievements.length) {
-          const newAchievement = unlockedAchievements[unlockedAchievements.length - 1]
-          setCelebrationAchievement(newAchievement)
-          setShowCelebration(true)
-          setShowConfetti(true)
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error)
-      } finally {
-        setLoading(false)
+      if (badgesData.badges.length > achievements.length && achievements.length > 0) {
+        const newAchievement = badgesData.badges[0]
+        setCelebrationAchievement(newAchievement)
+        setShowCelebration(true)
+        setShowConfetti(true)
       }
     }
-
-    fetchData()
-  }, [user?.uid])
+  }, [badgesData, achievements.length])
 
   const handleDismissCelebration = () => {
     setShowCelebration(false)
@@ -168,11 +133,26 @@ export default function StudentAchievements() {
         onComplete={() => setShowConfetti(false)} 
       />
       
-      <AchievementCelebration
-        achievement={celebrationAchievement}
-        show={showCelebration}
-        onDismiss={handleDismissCelebration}
-      />
+      {showCelebration && celebrationAchievement && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleDismissCelebration}>
+          <div className="bg-white rounded-3xl p-8 max-w-md mx-4 text-center shadow-2xl animate-in zoom-in">
+            <div className="text-6xl mb-4">🎉</div>
+            <h2 className="text-2xl font-bold text-[#5A4A42] mb-2">Achievement Unlocked!</h2>
+            <div className="w-16 h-16 bg-gradient-to-br from-[#FFD700] to-[#FFB5BA] rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg">
+              🏆
+            </div>
+            <h3 className="font-bold text-[#5A4A42] text-xl mb-2">{celebrationAchievement.name}</h3>
+            <p className="text-[#8B7355] mb-4">{celebrationAchievement.description}</p>
+            <p className="text-lg font-bold text-[#FFD700]">+{celebrationAchievement.points} points</p>
+            <button 
+              onClick={handleDismissCelebration}
+              className="mt-6 bg-[#FF6B6B] text-white px-6 py-3 rounded-full font-bold hover:bg-[#FF5252] transition-colors"
+            >
+              Awesome!
+            </button>
+          </div>
+        </div>
+      )}
 
       <nav className="bg-white/80 backdrop-blur-sm border-b border-[#FFB5BA]/30 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -279,16 +259,21 @@ export default function StudentAchievements() {
           {activeTab === 'achievements' && (
             <div className="space-y-4">
               {achievements.map((achievement) => (
-                <AchievementCard
-                  key={achievement.id}
-                  achievement={{
-                    icon: achievement.icon,
-                    title: achievement.title,
-                    description: achievement.description,
-                    points: achievement.points,
-                    unlocked: true
-                  }}
-                />
+                <div key={achievement.id} className="bg-gradient-to-r from-[#FFD700]/20 to-[#FFB5BA]/20 p-6 rounded-2xl border-2 border-[#FFD700]/30">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-[#FFD700] to-[#FFB5BA] rounded-2xl flex items-center justify-center text-2xl shadow-lg">
+                      🏆
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-[#5A4A42] text-lg">{achievement.name}</h3>
+                        <span className="text-[#FFD700] font-bold">✓</span>
+                      </div>
+                      <p className="text-[#8B7355] mt-1">{achievement.description}</p>
+                      <p className="text-sm text-[#5A4A42]/70 mt-2">+{achievement.points} points</p>
+                    </div>
+                  </div>
+                </div>
               ))}
               {achievements.length === 0 && (
                 <div className="bg-white rounded-2xl p-12 text-center shadow-lg">

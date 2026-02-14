@@ -7,19 +7,24 @@ import { ArrowLeft, Play, Pause, RotateCcw, Volume2, VolumeX, Clock, Target } fr
 import { useRouter } from 'next/navigation'
 import { useGameSounds } from '@/lib/hooks/useGameSounds'
 import { ConfettiExplosion, CelebrationMessage } from '@/components/CelebrationEffects'
+import { useSubmitFluencySession } from '@/lib/hooks/useActivities'
+import { useTrackActivity } from '@/lib/hooks/useBadges'
 
 const PASSAGES = [
   {
+    id: 'passage-1',
     title: 'The Cat',
     text: 'The cat sat on the mat. The cat likes to nap. The cat is soft and warm. The cat plays with a ball.',
     wordCount: 26
   },
   {
+    id: 'passage-2',
     title: 'The Dog',
     text: 'The dog likes to run. The dog likes to play. The dog is happy. The dog has a big tail.',
     wordCount: 23
   },
   {
+    id: 'passage-3',
     title: 'The Sun',
     text: 'The sun is bright. The sun is hot. The sun comes up in the morning. The sun goes down at night.',
     wordCount: 21
@@ -29,6 +34,8 @@ const PASSAGES = [
 export default function FluencyTimer() {
   const router = useRouter()
   const { isMuted, toggleMute, playClick, playStart, playWin } = useGameSounds()
+  const submitFluencySession = useSubmitFluencySession()
+  const trackActivity = useTrackActivity()
   const [currentPassage, setCurrentPassage] = useState(PASSAGES[0])
   const [timerRunning, setTimerRunning] = useState(false)
   const [timeElapsed, setTimeElapsed] = useState(0)
@@ -38,6 +45,7 @@ export default function FluencyTimer() {
   const [errorCount, setErrorCount] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
   const [showCelebrationMsg, setShowCelebrationMsg] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const startTimeRef = useRef<number>(0)
@@ -74,19 +82,41 @@ export default function FluencyTimer() {
     calculateResults()
   }, [])
 
-  const calculateResults = () => {
+  const calculateResults = async () => {
     const timeInMinutes = timeElapsed / 60
     if (timeInMinutes > 0) {
       const wpm = Math.round(currentPassage.wordCount / timeInMinutes)
-      setWordsPerMinute(wpm)
-
+      const correctWords = Math.max(0, currentPassage.wordCount - errorCount)
       const accuracyCalc = Math.max(0, Math.round(100 - (errorCount / currentPassage.wordCount) * 100))
+      
+      setWordsPerMinute(wpm)
       setAccuracy(accuracyCalc)
       
-      if (wpm >= 40 && accuracyCalc >= 80) {
-        playWin()
-        setShowConfetti(true)
-        setShowCelebrationMsg(true)
+      setIsSubmitting(true)
+      try {
+        await submitFluencySession.mutateAsync({
+          passageId: currentPassage.id,
+          words: currentPassage.wordCount,
+          correctWords: correctWords,
+          timeSeconds: timeElapsed,
+          ageGroup: 5
+        })
+        
+        await trackActivity.mutateAsync({
+          activityType: 'fluency',
+          score: wpm,
+          duration: timeElapsed
+        })
+        
+        if (wpm >= 40 && accuracyCalc >= 80) {
+          playWin()
+          setShowConfetti(true)
+          setShowCelebrationMsg(true)
+        }
+      } catch (error) {
+        console.error('Error submitting fluency session:', error)
+      } finally {
+        setIsSubmitting(false)
       }
     }
     setCompleted(true)

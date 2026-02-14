@@ -7,7 +7,9 @@ import { ArrowLeft, RotateCcw, Volume2, VolumeX, Trophy, Sparkles, Check } from 
 import { useRouter } from 'next/navigation'
 import { useGameSounds } from '@/lib/hooks/useGameSounds'
 import { ConfettiExplosion, StarBurst, CelebrationMessage } from '@/components/CelebrationEffects'
-import { useProgress } from '@/lib/hooks/useProgress'
+import { useSubmitSightWordAnswer, useSightWordProgress } from '@/lib/hooks/useActivities'
+import { useTrackActivity } from '@/lib/hooks/useBadges'
+import type { SightWordAnswerResult } from '@/lib/api/activities'
 
 const DOLCH_WORDS = {
   prePrimer: [
@@ -106,7 +108,9 @@ const LEVEL_CONFIGS = [
 export default function SightWordsBingo() {
   const router = useRouter()
   const { isMuted, toggleMute, playCorrect, playWrong, playStreak, playClick, playWin } = useGameSounds()
-  const { progress, updateSightWordsProgress, getAgeAppropriateSettings } = useProgress()
+  const submitSightWordAnswer = useSubmitSightWordAnswer()
+  const trackActivity = useTrackActivity()
+  const sightWordProgress = useSightWordProgress()
 
   const [currentLevel, setCurrentLevel] = useState(1)
   const [boardWords, setBoardWords] = useState<string[]>([])
@@ -123,9 +127,9 @@ export default function SightWordsBingo() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showStarBurst, setShowStarBurst] = useState(false)
   const [showCelebrationMsg, setShowCelebrationMsg] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const settings = getAgeAppropriateSettings()
-  const levelConfig = LEVEL_CONFIGS.find(c => c.level === settings.sightWordsLevel) || LEVEL_CONFIGS[0]
+  const levelConfig = LEVEL_CONFIGS.find(c => c.level === currentLevel) || LEVEL_CONFIGS[0]
 
   const initializeBoard = useCallback(() => {
     playClick()
@@ -166,72 +170,83 @@ export default function SightWordsBingo() {
     return null
   }
 
-  const markCell = (index: number) => {
-    if (markedCells.has(index) || showFeedback || !gameActive) return
+  const markCell = async (index: number) => {
+    if (markedCells.has(index) || showFeedback || !gameActive || isSubmitting) return
 
     const word = boardWords[index]
     const isCorrect = word === targetWord
 
     setShowFeedback(true)
     setFeedbackCorrect(isCorrect)
+    setIsSubmitting(true)
 
-    if (isCorrect) {
-      playCorrect()
+    try {
+      const levelKey = levelConfig.wordSource.replace('prePrimer', 'pre-primer').replace('firstGrade', 'grade-1').replace('secondGrade', 'grade-2') as 'pre-primer' | 'primer' | 'grade-1' | 'grade-2'
+      
+      const result: SightWordAnswerResult = await submitSightWordAnswer.mutateAsync({
+        word: targetWord,
+        level: levelKey,
+        isCorrect: isCorrect
+      })
 
-      const newStreak = streak + 1
-      setStreak(newStreak)
-      if (newStreak > 1 && (newStreak === 3 || newStreak === 5 || newStreak === 10)) {
-        playStreak(newStreak)
-        setShowStarBurst(true)
-        setShowCelebrationMsg(true)
-        setTimeout(() => setShowStarBurst(false), 1000)
-      }
+      if (isCorrect) {
+        playCorrect()
 
-      setScore((prev) => prev + 1)
-      setMarkedCells((prev) => new Set(prev).add(index))
+        const newStreak = streak + 1
+        setStreak(newStreak)
+        if (newStreak > 1 && (newStreak === 3 || newStreak === 5 || newStreak === 10)) {
+          playStreak(newStreak)
+          setShowStarBurst(true)
+          setShowCelebrationMsg(true)
+          setTimeout(() => setShowStarBurst(false), 1000)
+        }
 
-      const newMarked = new Set(markedCells).add(index)
-      const gotBingo = checkBingo(newMarked)
+        setScore((prev) => prev + 1)
+        setMarkedCells((prev) => new Set(prev).add(index))
 
-      if (gotBingo) {
-        playWin()
-        setBingos((prev) => prev + 1)
-        setShowBingo(true)
-        setShowConfetti(true)
-        setShowCelebrationMsg(true)
-        setTimeout(() => {
-          setShowBingo(false)
-          setShowConfetti(false)
-          setShowCelebrationMsg(false)
-        }, 3000)
+        const newMarked = new Set(markedCells).add(index)
+        const gotBingo = checkBingo(newMarked)
+
+        if (gotBingo) {
+          playWin()
+          setBingos((prev) => prev + 1)
+          setShowBingo(true)
+          setShowConfetti(true)
+          setShowCelebrationMsg(true)
+          setTimeout(() => {
+            setShowBingo(false)
+            setShowConfetti(false)
+            setShowCelebrationMsg(false)
+          }, 3000)
+          
+          await trackActivity.mutateAsync({
+            activityType: 'sight_words',
+            score: score + 1,
+            duration: 0
+          })
+        } else {
+          setTimeout(() => {
+            setShowFeedback(false)
+            if (newMarked.size < boardWords.length) {
+              const nextWordIndex = boardWords.findIndex(w => !newMarked.has(boardWords.indexOf(w)))
+              if (nextWordIndex !== -1) {
+                setTargetWord(boardWords[nextWordIndex])
+              }
+            }
+          }, 1500)
+        }
       } else {
+        playWrong()
+        setStreak(0)
+
         setTimeout(() => {
           setShowFeedback(false)
-          if (newMarked.size < boardWords.length) {
-            const nextWordIndex = boardWords.findIndex(w => !newMarked.has(boardWords.indexOf(w)))
-            if (nextWordIndex !== -1) {
-              setTargetWord(boardWords[nextWordIndex])
-            }
-          }
         }, 1500)
       }
-
-      updateSightWordsProgress({
-        correctAnswers: progress.sightWords.correctAnswers + 1,
-        totalGamesPlayed: progress.sightWords.totalGamesPlayed + 1,
-        longestStreak: Math.max(progress.sightWords.longestStreak, newStreak)
-      })
-    } else {
-      playWrong()
-      setStreak(0)
-
-      updateSightWordsProgress({
-        totalGamesPlayed: progress.sightWords.totalGamesPlayed + 1
-      })
-
-      setTimeout(() => {
-        setShowFeedback(false)
-      }, 1500)
+    } catch (error) {
+      console.error('Error submitting sight word answer:', error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -456,7 +471,7 @@ export default function SightWordsBingo() {
                     </p>
                   )}
 
-                  {!showWord && settings.hintsEnabled && (
+                  {!showWord && levelConfig.hintsEnabled && (
                     <button
                       onClick={revealWord}
                       className="text-[#FFE5B4] hover:text-[#FF6B6B] font-bold transition-colors"

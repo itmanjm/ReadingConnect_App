@@ -7,9 +7,10 @@ import { ArrowLeft, RotateCcw, Check, X, Volume2, VolumeX, BookOpen, Star, Award
 import { useRouter } from 'next/navigation'
 import { useGameSounds } from '@/lib/hooks/useGameSounds'
 import { ConfettiExplosion, CelebrationMessage } from '@/components/CelebrationEffects'
-import { useProgress } from '@/lib/hooks/useProgress'
+import { useSubmitComprehensionAnswer, useCompleteComprehensionPassage } from '@/lib/hooks/useActivities'
+import { useTrackActivity } from '@/lib/hooks/useBadges'
+import type { ComprehensionAnswerResult } from '@/lib/api/activities'
 
-// QAR Framework: Right There, Think and Search, Author and Me, On My Own
 type QuestionType = 'literal' | 'inferential' | 'evaluative'
 
 interface Question {
@@ -180,7 +181,9 @@ const PASSAGES: Passage[] = [
 export default function ComprehensionQuiz() {
   const router = useRouter()
   const { isMuted, toggleMute, playCorrect, playWrong, playClick, playWin } = useGameSounds()
-  const { progress, getAgeAppropriateSettings, updateComprehensionProgress } = useProgress()
+  const submitComprehensionAnswer = useSubmitComprehensionAnswer()
+  const completeComprehensionPassage = useCompleteComprehensionPassage()
+  const trackActivity = useTrackActivity()
 
   const [currentPassageIndex, setCurrentPassageIndex] = useState(0)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -193,16 +196,11 @@ export default function ComprehensionQuiz() {
   const [showConfetti, setShowConfetti] = useState(false)
   const [showCelebrationMsg, setShowCelebrationMsg] = useState(false)
   const [showExplanation, setShowExplanation] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const settings = getAgeAppropriateSettings()
-  const currentPassage = PASSAGES[settings.comprehensionLevel - 1]
+  const currentPassage = PASSAGES[currentPassageIndex]
   const currentQuestion = currentPassage.questions[currentQuestionIndex]
   const maxScore = currentPassage.questions.reduce((sum, q) => sum + q.points, 0)
-
-  useEffect(() => {
-    setCurrentPassageIndex(settings.comprehensionLevel - 1)
-    setCurrentQuestionIndex(0)
-  }, [settings.comprehensionLevel])
 
   useEffect(() => {
     if (showFeedback) {
@@ -225,18 +223,17 @@ export default function ComprehensionQuiz() {
               setShowCelebrationMsg(true)
             }
             setQuizComplete(true)
-
-            updateComprehensionProgress({
-              passagesCompleted: progress.comprehension.passagesCompleted + 1,
-              questionsAnswered: progress.comprehension.questionsAnswered + 1,
-              accuracyByType: {
-                ...progress.comprehension.accuracyByType,
-                [currentQuestion.type]: {
-                  correct: progress.comprehension.accuracyByType[currentQuestion.type].correct + 1,
-                  total: progress.comprehension.accuracyByType[currentQuestion.type].total + 1
-                }
-              },
-              lastPlayed: new Date().toISOString()
+            
+            completeComprehensionPassage.mutate({
+              passageId: `passage-${currentPassageIndex + 1}`,
+              score: score + currentQuestion.points,
+              totalQuestions: currentPassage.questions.length
+            })
+            
+            trackActivity.mutate({
+              activityType: 'comprehension',
+              score: finalPercentage,
+              duration: 0
             })
           }
         } else {
@@ -247,18 +244,18 @@ export default function ComprehensionQuiz() {
               setSelectedAnswer(null)
             } else {
               setQuizComplete(true)
-
-              updateComprehensionProgress({
-                passagesCompleted: progress.comprehension.passagesCompleted + 1,
-                questionsAnswered: progress.comprehension.questionsAnswered + 1,
-                accuracyByType: {
-                  ...progress.comprehension.accuracyByType,
-                  [currentQuestion.type]: {
-                    correct: progress.comprehension.accuracyByType[currentQuestion.type].correct,
-                    total: progress.comprehension.accuracyByType[currentQuestion.type].total + 1
-                  }
-                },
-                lastPlayed: new Date().toISOString()
+              
+              const finalPercentage = Math.round((score / maxScore) * 100)
+              completeComprehensionPassage.mutate({
+                passageId: `passage-${currentPassageIndex + 1}`,
+                score: score,
+                totalQuestions: currentPassage.questions.length
+              })
+              
+              trackActivity.mutate({
+                activityType: 'comprehension',
+                score: finalPercentage,
+                duration: 0
               })
             }
           }, 3000)
@@ -267,34 +264,49 @@ export default function ComprehensionQuiz() {
 
       return () => clearTimeout(timer)
     }
-  }, [showFeedback, feedbackCorrect, currentQuestionIndex, playWin, score, currentQuestion, maxScore, progress, updateComprehensionProgress])
+  }, [showFeedback, feedbackCorrect, currentQuestionIndex, playWin, score, currentQuestion, maxScore, completeComprehensionPassage, trackActivity, currentPassageIndex, currentPassage.questions.length])
 
-  const submitAnswer = useCallback((answer: string) => {
-    if (showFeedback) return
+  const submitAnswer = useCallback(async (answer: string) => {
+    if (showFeedback || isSubmitting) return
 
     const isCorrect = answer === currentQuestion.correct
     setSelectedAnswer(answer)
     setShowFeedback(true)
     setFeedbackCorrect(isCorrect)
+    setIsSubmitting(true)
 
-    if (isCorrect) {
-      playCorrect()
-      setScore((prev) => prev + currentQuestion.points)
-    } else {
-      playWrong()
-    }
+    try {
+      const result: ComprehensionAnswerResult = await submitComprehensionAnswer.mutateAsync({
+        passageId: `passage-${currentPassageIndex + 1}`,
+        questionId: `question-${currentQuestionIndex + 1}`,
+        answer: answer,
+        questionType: currentQuestion.type,
+        isCorrect: isCorrect
+      })
 
-    setAnswers((prev) => [
-      ...prev,
-      {
-        passage: currentPassage.title,
-        question: currentQuestion.question,
-        correct: isCorrect,
-        points: isCorrect ? currentQuestion.points : 0,
-        explanation: currentQuestion.explanation
+      if (isCorrect) {
+        playCorrect()
+        setScore((prev) => prev + currentQuestion.points)
+      } else {
+        playWrong()
       }
-    ])
-  }, [showFeedback, currentQuestion, currentPassage.title, playCorrect, playWrong])
+
+      setAnswers((prev) => [
+        ...prev,
+        {
+          passage: currentPassage.title,
+          question: currentQuestion.question,
+          correct: isCorrect,
+          points: isCorrect ? currentQuestion.points : 0,
+          explanation: currentQuestion.explanation
+        }
+      ])
+    } catch (error) {
+      console.error('Error submitting comprehension answer:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }, [showFeedback, isSubmitting, currentQuestion, currentPassage.title, currentPassageIndex, currentQuestionIndex, submitComprehensionAnswer, playCorrect, playWrong])
 
   const resetQuiz = () => {
     playClick()
