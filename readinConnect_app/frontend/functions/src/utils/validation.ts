@@ -1,8 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-admin.initializeApp();
-
 export const validateAuth = (context: any): string => {
   if (!context?.auth) {
     throw new functions.https.HttpsError(

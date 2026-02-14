@@ -3,8 +3,6 @@ import * as admin from 'firebase-admin';
 import { validateAuth, validateInput } from '../utils/validation';
 import type { SightWordAnswerInput, SightWordAnswerResult } from '../types';
 
-admin.initializeApp();
-
 const SIGHT_WORD_LEVELS = ['pre-primer', 'primer', 'grade-1', 'grade-2'] as const;
 
 const MASTERY_THRESHOLD = 3; // Consecutive correct to master

@@ -5,8 +5,6 @@ import { calculateMasteryDelta, PHASE_DATA } from '../utils/scoring';
 import { getUserMasteryDoc, updateLetterMastery, createLetterMastery } from '../utils/firestore';
 import type { PhonicsAnswerInput, PhonicsAnswerResult, PhaseAccessResult } from '../types';
 
-admin.initializeApp();
-
 interface PhonicsAnswerData extends PhonicsAnswerInput {
   timestamp?: number;
 }

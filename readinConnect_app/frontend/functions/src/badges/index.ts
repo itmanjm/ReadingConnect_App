@@ -2,8 +2,6 @@ import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { validateAuth, validateInput } from '../utils/validation';
 
-admin.initializeApp();
-
 // Badge definitions
 const BADGE_DEFINITIONS: Record<string, {
   name: string;

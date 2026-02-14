@@ -4,8 +4,6 @@ import { validateAuth } from '../utils/validation';
 import { PHASE_DATA } from '../utils/scoring';
 import type { PhaseAccessResult } from '../types';
 
-admin.initializeApp();
-
 export const checkPhaseUnlock = functions.https.onCall(
   async (data: unknown, context: functions.https.CallableContext): Promise<PhaseAccessResult> => {
     const uid = validateAuth(context);

@@ -3,8 +3,6 @@ import * as admin from 'firebase-admin';
 import { validateAuth, validateInput } from '../utils/validation';
 import type { FluencySessionInput, FluencySessionResult } from '../types';
 
-admin.initializeApp();
-
 // Age-appropriate WPM benchmarks
 const WPM_BENCHMARKS: Record<number, { target: number; excellent: number }> = {
   4: { target: 20, excellent: 40 },

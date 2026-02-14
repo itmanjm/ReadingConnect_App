@@ -3,8 +3,6 @@ import * as admin from 'firebase-admin';
 import { validateAuth, validateInput } from '../utils/validation';
 import type { ComprehensionQuestionInput, ComprehensionAnswerResult } from '../types';
 
-admin.initializeApp();
-
 export const processComprehensionAnswer = functions.https.onCall(
   async (data: unknown, context: any): Promise<ComprehensionAnswerResult> => {
     const uid = validateAuth(context);
