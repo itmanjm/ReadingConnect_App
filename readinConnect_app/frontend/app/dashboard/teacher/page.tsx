@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/stores/auth'
-import { useTeacherStudents } from '@/lib/hooks/useTeachers'
+import { useTeacherStudents, useAssignStudentToTeacher } from '@/lib/hooks/useTeachers'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,10 +15,15 @@ export default function TeacherDashboard() {
   const user = useAuthStore((state) => state.user)
   const profile = useAuthStore((state) => state.profile)
   const signOut = useAuthStore((state) => state.signOut)
-  const { data: studentsData, isLoading: studentsLoading } = useTeacherStudents()
+  const { data: studentsData, isLoading: studentsLoading, refetch } = useTeacherStudents()
+  const assignStudent = useAssignStudentToTeacher()
   const students = studentsData?.students || []
 
   const [loading, setLoading] = useState(true)
+  const [showAddStudent, setShowAddStudent] = useState(false)
+  const [studentEmail, setStudentEmail] = useState('')
+  const [assignError, setAssignError] = useState('')
+  const [assignSuccess, setAssignSuccess] = useState('')
 
   useEffect(() => {
     if (!user || profile?.role !== 'teacher') {
@@ -31,13 +36,32 @@ export default function TeacherDashboard() {
 
   const totalPoints = students.reduce((sum, s) => sum + (s.total_points || 0), 0)
   const totalActivities = students.reduce((sum, s) => sum + (s.activities_completed || 0), 0)
-  const avgStreak = students.length > 0 
-    ? Math.round(students.reduce((sum, s) => sum + (s.streak_days || 0), 0) / students.length) 
+  const avgStreak = students.length > 0
+    ? Math.round(students.reduce((sum, s) => sum + (s.streak_days || 0), 0) / students.length)
     : 0
 
   const handleSignOut = async () => {
     await signOut()
     router.push('/auth/login')
+  }
+
+  const handleAssignStudent = async () => {
+    if (!studentEmail) {
+      setAssignError('Please enter a student email')
+      return
+    }
+
+    try {
+      setAssignError('')
+      setAssignSuccess('')
+      await assignStudent.mutateAsync(studentEmail)
+      setAssignSuccess('Student assigned successfully!')
+      setStudentEmail('')
+      refetch()
+      setTimeout(() => setShowAddStudent(false), 2000)
+    } catch (error: any) {
+      setAssignError(error.message || 'Failed to assign student')
+    }
   }
 
   if (loading) {
@@ -154,6 +178,50 @@ export default function TeacherDashboard() {
               <CardDescription>Manage your classroom</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
+              {!showAddStudent ? (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start gap-2 bg-blue-50 border-blue-200 hover:bg-blue-100"
+                  onClick={() => setShowAddStudent(true)}
+                >
+                  <Users className="h-4 w-4" />
+                  Add Student (by Email)
+                </Button>
+              ) : (
+                <div className="space-y-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <input
+                    type="email"
+                    placeholder="student@example.com"
+                    value={studentEmail}
+                    onChange={(e) => setStudentEmail(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md text-sm"
+                  />
+                  {assignError && <p className="text-red-500 text-xs">{assignError}</p>}
+                  {assignSuccess && <p className="text-green-600 text-xs">{assignSuccess}</p>}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleAssignStudent}
+                      disabled={assignStudent.isPending}
+                      className="flex-1"
+                    >
+                      {assignStudent.isPending ? 'Assigning...' : 'Assign'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setShowAddStudent(false)
+                        setStudentEmail('')
+                        setAssignError('')
+                        setAssignSuccess('')
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
               <Link href="/teacher/reports">
                 <Button variant="outline" className="w-full justify-start gap-2">
                   <FileText className="h-4 w-4" />
