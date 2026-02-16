@@ -3,21 +3,16 @@ import { getAuth, setPersistence, inMemoryPersistence } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyCGc4EBAdLRdmfBd_08reVeXVt6a6OfirE",
+  authDomain: "readingconnect-lit.firebaseapp.com",
+  projectId: "readingconnect-lit",
+  storageBucket: "readingconnect-lit.firebasestorage.app",
+  messagingSenderId: "302745627563",
+  appId: "1:302745627563:web:8c0c7ec22a8bba294f00ee",
+  measurementId: "G-L3B7M9ZZMG"
 }
 
-console.log('Firebase Config:', {
-  apiKey: firebaseConfig.apiKey ? 'Set' : 'Not Set',
-  authDomain: firebaseConfig.authDomain,
-  projectId: firebaseConfig.projectId,
-  appId: firebaseConfig.appId
-})
+console.log('Firebase Config:', firebaseConfig)
 
 export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
