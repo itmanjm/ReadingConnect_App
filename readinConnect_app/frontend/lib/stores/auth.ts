@@ -96,6 +96,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signIn: async (email, password) => {
     try {
       console.log('AuthStore: Signing in with email:', email)
+      console.log('AuthStore: Auth object:', auth)
+      console.log('AuthStore: Auth currentUser:', auth.currentUser)
+      console.log('AuthStore: Auth app:', auth.app)
+      console.log('AuthStore: Auth app options:', auth.app.options)
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
 
       if (!userCredential?.user) {
@@ -105,7 +109,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('AuthStore: Sign in successful')
       return { error: null }
     } catch (error: any) {
-      console.error('AuthStore: Sign in error:', error.code, error.message)
+      console.error('AuthStore: Sign in error:', error)
+      console.error('AuthStore: Sign in error code:', error.code)
+      console.error('AuthStore: Sign in error message:', error.message)
+      console.error('AuthStore: Sign in error customData:', error.customData)
       const errorMessage = error?.message || 'Failed to sign in'
       return { error: errorMessage }
     }
