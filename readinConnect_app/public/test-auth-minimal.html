@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Firebase Auth Test - Minimal</title>
+  <script type="module">
+    // Import Firebase directly from CDN (same version as your app)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, setPersistence, inMemoryPersistence } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyCGc4EBAdLRdmfBd_08reVeXVt6a6OfirE",
+      authDomain: "readingconnect-lit.firebaseapp.com",
+      projectId: "readingconnect-lit",
+      storageBucket: "readingconnect-lit.firebasestorage.app",
+      messagingSenderId: "302745627563",
+      appId: "1:302745627563:web:8c0c7ec22a8bba294f00ee",
+      measurementId: "G-L3B7M9ZZMG"
+    };
+    
+    try {
+      console.log('Initializing Firebase with config:', firebaseConfig);
+      const app = initializeApp(firebaseConfig);
+      console.log('✅ Firebase initialized');
+      
+      const auth = getAuth(app);
+      console.log('✅ Auth initialized');
+      
+      await setPersistence(auth, inMemoryPersistence);
+      console.log('✅ Persistence set to inMemory');
+      
+      document.getElementById('status').innerHTML = '<p style="color: green;">✅ Firebase initialized successfully!</p>';
+      
+      // Make test function global
+      window.testLogin = async () => {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const resultDiv = document.getElementById('result');
+        
+        resultDiv.innerHTML = '<p>Attempting login...</p>';
+        
+        try {
+          console.log('Attempting login with:', email);
+          const result = await signInWithEmailAndPassword(auth, email, password);
+          console.log('✅ Login successful:', result.user);
+          resultDiv.innerHTML = `<p style="color: green;">✅ Login successful!<br>User: ${result.user.email}<br>UID: ${result.user.uid}</p>`;
+        } catch (error) {
+          console.error('❌ Login error:', error);
+          console.error('Error code:', error.code);
+          console.error('Error message:', error.message);
+          console.error('Error full:', JSON.stringify(error, null, 2));
+          resultDiv.innerHTML = `<p style="color: red;">❌ Error: ${error.code}<br>${error.message}</p>`;
+        }
+      };
+      
+    } catch (error) {
+      console.error('❌ Firebase init error:', error);
+      document.getElementById('status').innerHTML = `<p style="color: red;">❌ Firebase init error: ${error.message}</p>`;
+    }
+  </script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background: #f5f5f5; }
+    .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    h1 { color: #333; }
+    input { display: block; margin: 10px 0; padding: 12px; width: 100%; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; }
+    button { padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
+    button:hover { background: #0056b3; }
+    #status, #result { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 5px; border-left: 4px solid #007bff; }
+    .instructions { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; }
+    code { background: #f4f4f4; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔥 Firebase Auth Test (Standalone)</h1>
+    <div id="status">Loading...</div>
+    
+    <div class="instructions">
+      <strong>Test Credentials:</strong><br>
+      Email: <code>teacher.test@readingconnect.com</code><br>
+      Password: <code>TestTeacher123!</code>
+    </div>
+    
+    <h2>Test Login</h2>
+    <input type="email" id="email" placeholder="Email" value="teacher.test@readingconnect.com">
+    <input type="password" id="password" placeholder="Password" value="TestTeacher123!">
+    <button onclick="testLogin()">Test Login</button>
+    
+    <div id="result"></div>
+    
+    <h2>Debug Instructions</h2>
+    <ol>
+      <li>Open browser console (F12) <strong>BEFORE</strong> clicking anything</li>
+      <li>Refresh the page</li>
+      <li>Check if you see "✅ Firebase initialized"</li>
+      <li>Click "Test Login"</li>
+      <li>Check console for detailed error logs</li>
+      <li>Screenshot any errors</li>
+    </ol>
+  </div>
+</body>
+</html>
