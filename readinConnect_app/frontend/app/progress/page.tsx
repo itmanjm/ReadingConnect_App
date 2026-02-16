@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { TrendingUp, TrendingDown, Calendar, BookOpen, Target, Award, Clock, ArrowLeft, Star, Trophy, Volume2, VolumeX } from 'lucide-react'
 import Link from 'next/link'
 import { useSound } from '@/lib/providers/SoundProvider'
+import { useSightWordProgress, useFluencyProgress, useComprehensionProgress } from '@/lib/hooks/useActivities'
+import { useUserBadges } from '@/lib/hooks/useBadges'
 
 interface SkillProgress {
   skill: string
@@ -95,13 +97,52 @@ const WEEKLY_PROGRESS = [
 export default function ProgressVisualization() {
   const { isMuted, toggleMute, playClick, playHover } = useSound()
   
+  const { data: sightWordData } = useSightWordProgress()
+  const { data: fluencyData } = useFluencyProgress()
+  const { data: comprehensionData } = useComprehensionProgress()
+  const { data: badgesData } = useUserBadges()
+  
+  const badges = badgesData?.badges || []
+  
+  const sightWordProgress = sightWordData as { currentLevel?: string; totalMastered?: number } | undefined
+  const fluencyProgress = fluencyData as { currentWpm?: number; currentAccuracy?: number; sessionsCompleted?: number } | undefined
+  const comprehensionProgress = comprehensionData as { currentLevel?: number; overallAccuracy?: number; passagesCompleted?: number } | undefined
+  
+  const skillProgressData = [
+    {
+      skill: 'Sight Words',
+      currentLevel: sightWordProgress?.currentLevel === 'pre-primer' ? 1 : 
+                    sightWordProgress?.currentLevel === 'primer' ? 2 : 
+                    sightWordProgress?.currentLevel === 'grade-1' ? 3 : 
+                    sightWordProgress?.currentLevel === 'grade-2' ? 4 : 1,
+      targetLevel: 4,
+      progress: sightWordProgress?.totalMastered ? Math.round((sightWordProgress.totalMastered / 100) * 100) : 0,
+      lastAssessed: new Date().toISOString().split('T')[0],
+      activitiesCompleted: sightWordProgress?.totalMastered || 0,
+    },
+    {
+      skill: 'Fluency',
+      currentLevel: fluencyProgress?.currentWpm ? Math.min(Math.floor(fluencyProgress.currentWpm / 20), 5) : 1,
+      targetLevel: 5,
+      progress: fluencyProgress?.currentAccuracy || 0,
+      lastAssessed: new Date().toISOString().split('T')[0],
+      activitiesCompleted: fluencyProgress?.sessionsCompleted || 0,
+    },
+    {
+      skill: 'Comprehension',
+      currentLevel: comprehensionProgress?.currentLevel || 1,
+      targetLevel: 5,
+      progress: comprehensionProgress?.overallAccuracy || 0,
+      lastAssessed: new Date().toISOString().split('T')[0],
+      activitiesCompleted: comprehensionProgress?.passagesCompleted || 0,
+    },
+  ]
+  
   const averageProgress = Math.round(
-    SKILL_PROGRESS.reduce((sum, skill) => sum + skill.progress, 0) / SKILL_PROGRESS.length
+    skillProgressData.reduce((sum, skill) => sum + skill.progress, 0) / skillProgressData.length
   )
-  const totalActivities = SKILL_PROGRESS.reduce((sum, skill) => sum + skill.activitiesCompleted, 0)
-  const weeklyAverage = Math.round(
-    WEEKLY_PROGRESS.reduce((sum, week) => sum + week.activities, 0) / WEEKLY_PROGRESS.length
-  )
+  const totalActivities = skillProgressData.reduce((sum, skill) => sum + skill.activitiesCompleted, 0)
+  const weeklyAverage = Math.round(totalActivities / 4)
 
   return (
     <div className="min-h-screen bg-[#FFF8F0] relative overflow-hidden p-4">
@@ -214,7 +255,7 @@ export default function ProgressVisualization() {
             </CardHeader>
             <CardContent className="pt-4">
               <div className="text-4xl font-bold text-[#5A4A42] flex items-center gap-2">
-                3
+                {badges.length}
                 <span className="text-2xl">🏆</span>
               </div>
             </CardContent>
@@ -235,7 +276,7 @@ export default function ProgressVisualization() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
-              {SKILL_PROGRESS.map((skill) => {
+              {skillProgressData.map((skill) => {
                 const isImproving = skill.progress >= 50
                 const isProficient = skill.progress >= 80
 

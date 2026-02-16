@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/auth';
-import { getFirestore, collection, doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { app } from '@/lib/firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { LogOut, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { BadgeCollection } from '@/components/badges/BadgeCollection';
+import { useUserBadges } from '@/lib/hooks/useBadges';
+import { getFirestore, collection } from 'firebase/firestore';
 
 const db = getFirestore(app);
 
@@ -40,6 +42,11 @@ export default function StudentDashboard() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
+  
+  const { data: badgesData, isLoading: badgesLoading } = useUserBadges();
+  const badges = badgesData?.badges || [];
+  const progressToNext = badgesData?.progressToNext || [];
+  
   const [progress, setProgress] = useState<StudentProgress>({
     words_learned: 0,
     words_mastered: 0,
@@ -47,7 +54,6 @@ export default function StudentDashboard() {
     current_streak: 0,
     total_minutes: 0
   });
-  const [badges, setBadges] = useState<Badge[]>([]);
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
@@ -76,20 +82,6 @@ export default function StudentDashboard() {
       }
     );
 
-    const unsubscribeBadges = onSnapshot(
-      collection(db, 'users', user.uid, 'badges'),
-      (snapshot) => {
-        const badgesData = snapshot.docs.map((doc: any) => ({
-          docId: doc.id,
-          ...doc.data() as Badge
-        }));
-        setBadges(badgesData);
-      },
-      (error) => {
-        console.error('Error fetching badges:', error);
-      }
-    );
-
     const unsubscribeActivities = onSnapshot(
       collection(db, 'users', user.uid, 'activities'),
       (snapshot) => {
@@ -107,7 +99,6 @@ export default function StudentDashboard() {
 
     return () => {
       unsubscribeProgress();
-      unsubscribeBadges();
       unsubscribeActivities();
     };
   }, [user]);
@@ -117,7 +108,7 @@ export default function StudentDashboard() {
     router.push('/auth/login')
   }
 
-  if (loading) {
+  if (loading || badgesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Zap className="h-8 w-8 animate-spin text-blue-600" />

@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { collection, query, where, updateDoc, doc, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase/auth';
+import { useTeacherStudents } from '@/lib/hooks/useTeachers';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 interface ReadingLevel {
   id?: string;
@@ -19,7 +21,8 @@ interface ReadingLevel {
 
 export default function ReadingLevelAssignment() {
   const [levels, setLevels] = useState<ReadingLevel[]>([]);
-  const [students, setStudents] = useState<any[]>([]);
+  const { data: studentsData, isLoading: studentsLoading } = useTeacherStudents();
+  const students = studentsData?.students || [];
   const [selectedLevel, setSelectedLevel] = useState<ReadingLevel | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -34,29 +37,20 @@ export default function ReadingLevelAssignment() {
       setLevels(levelsData);
     });
 
-    const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
-    const unsubscribeStudents = onSnapshot(studentsQuery, (snapshot) => {
-      const studentsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setStudents(studentsData);
-    });
-
     return () => {
       unsubscribeLevels();
-      unsubscribeStudents();
     };
   }, []);
 
   const handleAssignLevel = async (studentId: string, levelId: string) => {
     try {
       setSaving(true);
-      const studentRef = doc(db, 'users', studentId);
+      const functions = getFunctions();
+      const assignLevelFn = httpsCallable(functions, 'assignStudentToTeacher');
       
-      await updateDoc(studentRef, {
-        current_reading_level: levelId,
-        updated_at: new Date().toISOString()
+      await assignLevelFn({
+        studentId,
+        readingLevel: levelId
       });
 
       console.log(`✅ Assigned level ${levelId} to student ${studentId}`);
@@ -68,7 +62,8 @@ export default function ReadingLevelAssignment() {
     }
   };
 
-  const getLevelName = (levelId: string): string => {
+  const getLevelName = (levelId: string | undefined): string => {
+    if (!levelId) return 'Not Assigned';
     const level = levels.find(l => l.level_id === levelId);
     return level?.level_name || levelId;
   };
@@ -144,8 +139,8 @@ export default function ReadingLevelAssignment() {
                         </p>
                       </div>
                       <button
-                        onClick={() => handleAssignLevel(student.id, selectedLevel.level_id)}
-                        disabled={saving}
+                        onClick={() => selectedLevel && handleAssignLevel(student.id, selectedLevel.level_id)}
+                        disabled={saving || !selectedLevel}
                         className="bg-gradient-to-r from-[#B8E0D2] to-[#98D0C0] hover:from-[#A8D5BA] hover:to-[#7CC7C0] text-white font-bold py-2 px-4 rounded-xl transition-all hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {saving ? 'Assigning...' : 'Assign'}

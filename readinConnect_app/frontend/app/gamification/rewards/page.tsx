@@ -8,6 +8,7 @@ import { Star, Gift, Trophy, Lock, Unlock, ArrowLeft, Sparkles, Volume2, VolumeX
 import Link from 'next/link'
 import { useSound } from '@/lib/providers/SoundProvider'
 import { ConfettiExplosion, CelebrationMessage } from '@/components/CelebrationEffects'
+import { useUserBadges } from '@/lib/hooks/useBadges'
 
 interface Reward {
   id: string
@@ -105,7 +106,10 @@ const REWARDS: Reward[] = [
 
 export default function RewardsPage() {
   const { isMuted, toggleMute, playClick, playHover, playWin, playLevelUp } = useSound()
-  const [userPoints, setUserPoints] = useState<number>(65)
+  const { data: badgesData } = useUserBadges()
+  const badges = badgesData?.badges || []
+  const totalPoints = badges.reduce((sum, badge) => sum + (badge.points || 100), 0)
+  const [userPoints, setUserPoints] = useState<number>(totalPoints)
   const [claimedRewards, setClaimedRewards] = useState<Set<string>>(new Set())
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null)
   const [showConfetti, setShowConfetti] = useState(false)

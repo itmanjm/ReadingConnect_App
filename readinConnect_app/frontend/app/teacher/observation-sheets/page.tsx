@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Save, Plus, Trash2, ArrowLeft, Clipboard, Download, Calendar, CheckCircle, Star, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import { useTeacherStudents, useCreateObservationSheet } from '@/lib/hooks/useTeachers'
 
 interface SkillObservation {
   skill: string
@@ -44,6 +45,10 @@ const MASTERY_LEVELS = {
 } as const
 
 export default function ObservationSheetBuilder() {
+  const { data: studentsData } = useTeacherStudents()
+  const students = studentsData?.students || []
+  const createObservation = useCreateObservationSheet()
+  
   const [observationSheet, setObservationSheet] = useState<ObservationSheet>({
     id: '',
     studentId: '',
@@ -59,6 +64,7 @@ export default function ObservationSheetBuilder() {
   })
 
   const [saved, setSaved] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const updateObservation = (index: number, field: keyof SkillObservation, value: any) => {
     setObservationSheet((prev) => {
@@ -68,9 +74,38 @@ export default function ObservationSheetBuilder() {
     })
   }
 
-  const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 3000)
+  const handleSave = async () => {
+    if (!observationSheet.studentId) {
+      alert('Please select a student first')
+      return
+    }
+    
+    try {
+      setIsSubmitting(true)
+      
+      const proficientSkills = observationSheet.observations
+        .filter(obs => obs.mastery === 'proficient')
+        .map(obs => obs.skill)
+      
+      const developingSkills = observationSheet.observations
+        .filter(obs => obs.mastery === 'not_yet' || obs.mastery === 'emerging')
+        .map(obs => obs.skill)
+      
+      await createObservation.mutateAsync({
+        studentId: observationSheet.studentId,
+        notes: observationSheet.notes,
+        strengths: proficientSkills,
+        areasForImprovement: developingSkills,
+        recommendations: observationSheet.recommendations ? [observationSheet.recommendations] : []
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (error) {
+      console.error('Error saving observation:', error)
+      alert('Failed to save observation. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const getMasteryCount = (level: keyof typeof MASTERY_LEVELS) => {
@@ -131,18 +166,30 @@ export default function ObservationSheetBuilder() {
             <CardHeader className="pb-4">
               <div className="flex items-center gap-2">
                 <span className="text-2xl">👤</span>
-                <Label htmlFor="student-name" className="text-lg font-bold text-[#5A4A42]">Student Name</Label>
+                <Label htmlFor="student-select" className="text-lg font-bold text-[#5A4A42]">Select Student</Label>
               </div>
             </CardHeader>
             <CardContent>
-              <Input
-                id="student-name"
-                type="text"
-                placeholder="Enter student name"
-                value={observationSheet.studentName}
-                onChange={(e) => setObservationSheet({ ...observationSheet, studentName: e.target.value })}
-                className="rounded-2xl border-2 border-[#FFB5BA]/30 h-14 text-lg text-center"
-              />
+              <select
+                id="student-select"
+                value={observationSheet.studentId}
+                onChange={(e) => {
+                  const student = students.find(s => s.id === e.target.value)
+                  setObservationSheet({ 
+                    ...observationSheet, 
+                    studentId: e.target.value,
+                    studentName: student?.full_name || student?.email || ''
+                  })
+                }}
+                className="w-full rounded-2xl border-2 border-[#FFB5BA]/30 h-14 text-lg px-4"
+              >
+                <option value="">Choose a student...</option>
+                {students.map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {student.full_name || student.email}
+                  </option>
+                ))}
+              </select>
             </CardContent>
           </Card>
 
@@ -361,10 +408,11 @@ export default function ObservationSheetBuilder() {
           </div>
           <Button
             onClick={handleSave}
-            className="bg-gradient-to-r from-[#FF6B6B] to-[#FFB5BA] hover:from-[#FF5252] hover:to-[#FF9AA2] text-white rounded-full h-14 px-8 font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105"
+            disabled={isSubmitting || !observationSheet.studentId}
+            className="bg-gradient-to-r from-[#FF6B6B] to-[#FFB5BA] hover:from-[#FF5252] hover:to-[#FF9AA2] text-white rounded-full h-14 px-8 font-bold shadow-lg hover:shadow-xl transition-all hover:scale-105 disabled:opacity-50"
           >
             <Save className="h-4 w-4 mr-2" />
-            Save Observation
+            {isSubmitting ? 'Saving...' : 'Save Observation'}
           </Button>
         </div>
 

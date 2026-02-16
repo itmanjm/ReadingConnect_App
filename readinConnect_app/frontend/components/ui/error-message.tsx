@@ -1,6 +1,6 @@
 'use client'
 
-import { X } from 'lucide-react'
+import { X, AlertTriangle } from 'lucide-react'
 import { Button } from './button'
 import type { AppError } from '@/lib/errors'
 

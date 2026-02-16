@@ -31,18 +31,20 @@ export const processComprehensionAnswer = functions.https.onCall(
 
     const progressRef = admin.firestore().doc(`users/${uid}/progress/comprehension`);
     const progressDoc = await progressRef.get();
-    
-    const currentProgress = progressDoc.exists ? progressDoc.data() : {
+
+    const defaultProgress = {
       passagesCompleted: 0,
       questionsAnswered: 0,
       accuracyByType: {
         literal: { correct: 0, total: 0 },
         inferential: { correct: 0, total: 0 },
         evaluative: { correct: 0, total: 0 }
-      },
+      } as Record<string, { correct: number; total: number }>,
       currentLevel: 1,
-      completedPassages: []
+      completedPassages: [] as any[]
     };
+
+    const currentProgress = progressDoc.exists ? (progressDoc.data() || defaultProgress) : defaultProgress;
 
     // Update accuracy by type
     currentProgress.accuracyByType[questionType].total += 1;
@@ -64,14 +66,14 @@ export const processComprehensionAnswer = functions.https.onCall(
 
     // Calculate overall accuracy
     const totalCorrect = currentProgress.accuracyByType ? Object.values(currentProgress.accuracyByType).reduce(
-      (sum: number, type: any) => sum + type.correct, 
+      (sum: number, type: any) => sum + type.correct,
       0
-    );
+    ) : 0;
     const totalQuestions = currentProgress.accuracyByType ? Object.values(currentProgress.accuracyByType).reduce(
-      (sum: number, type: any) => sum + type.total, 
+      (sum: number, type: any) => sum + type.total,
       0
-    );
-    const overallAccuracy = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+    ) : 0;
+    const overallAccuracy = (totalQuestions as number) > 0 ? Math.round(((totalCorrect as number) / (totalQuestions as number)) * 100) : 0;
 
     // Determine level based on accuracy and question types
     let currentLevel = 1;
@@ -102,7 +104,6 @@ export const processComprehensionAnswer = functions.https.onCall(
       overallAccuracy,
       currentLevel
     };
-  }
   }
 );
 

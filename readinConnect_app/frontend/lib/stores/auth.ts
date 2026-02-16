@@ -27,10 +27,7 @@ interface AuthState {
   setProfile: (profile: Profile | null) => void
   setLoading: (loading: boolean) => void
   setAuthError: (error: string | null) => void
-  signUp: (email: string, password: string, displayName: string, role: UserRole) => Promise<{ error: string | null }>
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>
-  signInWithGoogle: () => Promise<{ error: string | null }>
-  signOut: () => Promise<void>
+  uid: string | null
 }
 
 const DEFAULT_ROLE: UserRole = 'student'
@@ -52,16 +49,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   profile: null,
   loading: true,
   authError: null,
-
+  uid: null,
+ 
   setUser: (user) => {
     const currentProfile = get().profile
     if (user && !currentProfile) {
       const profile = createProfileFromUser(user)
-      set({ user, profile, authError: null })
+      set({ user, profile, uid: user?.uid || null, authError: null })
     } else if (!user) {
-      set({ user: null, profile: null, authError: null })
+      set({ user: null, profile: null, uid: null, authError: null })
     } else {
-      set({ user, authError: null })
+      set({ user, uid: user?.uid || null, authError: null })
     }
   },
 

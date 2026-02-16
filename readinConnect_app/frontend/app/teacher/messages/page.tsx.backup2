@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Send, MessageCircle, Users, Search, Plus, FileText, Trophy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useTeacherStudents } from '@/lib/hooks/useTeachers'
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore'
+import { db } from '@/lib/firebase/auth'
 import { useMessages, Message } from '@/lib/hooks/useMessages'
 import { useAuthStore } from '@/lib/stores/auth'
 
@@ -17,9 +18,8 @@ interface Student {
 
 export default function TeacherMessages() {
   const router = useRouter()
-  const user = useAuthStore()
-  const { data: studentsData, isLoading } = useTeacherStudents()
-  const students = studentsData?.students || []
+  const { user } = useAuthStore()
+  const [students, setStudents] = useState<Student[]>([])
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [messageContent, setMessageContent] = useState('')
   const [subject, setSubject] = useState('')
@@ -40,6 +40,27 @@ export default function TeacherMessages() {
     'teacher', 
     user?.displayName || user?.email || 'Teacher'
   )
+
+  useEffect(() => {
+    async function fetchStudents() {
+      try {
+        const studentsQuery = query(
+          collection(db, 'users'), 
+          where('role', '==', 'student'),
+          limit(50)
+        )
+        const snapshot = await getDocs(studentsQuery)
+        const studentsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Student))
+        setStudents(studentsData)
+      } catch (error) {
+        console.error('Error fetching students:', error)
+      }
+    }
+    fetchStudents()
+  }, [])
 
   useEffect(() => {
     if (selectedStudent) {

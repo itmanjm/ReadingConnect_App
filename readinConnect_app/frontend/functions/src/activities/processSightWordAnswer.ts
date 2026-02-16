@@ -26,8 +26,8 @@ export const processSightWordAnswer = functions.https.onCall(
 
     const progressRef = admin.firestore().doc(`users/${uid}/progress/sight-words`);
     const progressDoc = await progressRef.get();
-    
-    const currentProgress = progressDoc.exists ? progressDoc.data() : {
+
+    const defaultProgress = {
       masteredWords: {
         'pre-primer': [],
         'primer': [],
@@ -36,8 +36,10 @@ export const processSightWordAnswer = functions.https.onCall(
       },
       currentLevel: 'pre-primer',
       totalMastered: 0,
-      wordProgress: {}
+      wordProgress: {} as Record<string, any>
     };
+
+    const currentProgress = progressDoc.exists ? (progressDoc.data() || defaultProgress) : defaultProgress;
 
     const wordProgress = currentProgress.wordProgress?.[word] || {
       word,
