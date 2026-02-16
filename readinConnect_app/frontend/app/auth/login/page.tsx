@@ -1,17 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/lib/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Sparkles, Star } from 'lucide-react'
+import { Sparkles, Star, CheckCircle } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const signIn = useAuthStore((state) => state.signIn)
   const signInWithGoogle = useAuthStore((state) => state.signInWithGoogle)
 
@@ -20,6 +21,14 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+
+  useEffect(() => {
+    const registered = searchParams.get('registered')
+    if (registered === 'true') {
+      setSuccessMessage('Account created successfully! Please sign in.')
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -156,6 +165,13 @@ export default function LoginPage() {
                 </span>
               )}
             </Button>
+
+            {successMessage && (
+              <div className="text-sm text-green-600 bg-green-50 border-2 border-green-200 rounded-xl p-3 flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                <span className="flex-1">{successMessage}</span>
+              </div>
+            )}
 
             {error && (
               <div className="text-sm text-[#FF6B6B] bg-[#FF6B6B]/10 border-2 border-[#FF6B6B]/30 rounded-xl p-3 flex items-center gap-2">

@@ -69,10 +69,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (authReady && initialized) {
       console.log('AuthProvider: User logged in, checking current route', user?.email)
       const currentPath = window.location.pathname
- 
-       if (user && (currentPath === '/login' || currentPath === '/auth/login' || currentPath === '/auth/register' || currentPath === '/register' || currentPath === '/')) {
-        console.log('AuthProvider: Redirecting to student dashboard')
-        router.push('/dashboard/student')
+      const profile = useAuthStore.getState().profile
+      
+      if (user && (currentPath === '/login' || currentPath === '/auth/login' || currentPath === '/auth/register' || currentPath === '/register' || currentPath === '/')) {
+        // Redirect based on user role
+        if (profile?.role === 'teacher') {
+          console.log('AuthProvider: Redirecting to teacher dashboard')
+          router.push('/dashboard/teacher')
+        } else {
+          console.log('AuthProvider: Redirecting to student dashboard')
+          router.push('/dashboard/student')
+        }
       }
     }
   }, [user, initialized, authReady, router])

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teacher Dashboard Integration Test</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyCGc4EBAdLRdmfBd_08reVeXVt6a6OfirE",
+      authDomain: "readingconnect-lit.firebaseapp.com",
+      projectId: "readingconnect-lit",
+      storageBucket: "readingconnect-lit.firebasestorage.app",
+      messagingSenderId: "302745627563",
+      appId: "1:302745627563:web:8c0c7ec22a8bba294f00ee"
+    };
+    
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const functions = getFunctions(app);
+    
+    let currentUser = null;
+    
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        document.getElementById('user-info').innerHTML = `
+          <p><strong>Email:</strong> ${user.email}</p>
+          <p><strong>UID:</strong> ${user.uid}</p>
+          <p><strong>Display Name:</strong> ${user.displayName || 'Not set'}</p>
+        `;
+        document.getElementById('login-section').style.display = 'none';
+        document.getElementById('test-section').style.display = 'block';
+      } else {
+        document.getElementById('user-info').innerHTML = '<p>Not logged in</p>';
+        document.getElementById('login-section').style.display = 'block';
+        document.getElementById('test-section').style.display = 'none';
+      }
+    });
+    
+    window.login = async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        document.getElementById('login-error').innerHTML = '<p style="color: green;">✅ Login successful!</p>';
+      } catch (error) {
+        document.getElementById('login-error').innerHTML = `<p style="color: red;">❌ ${error.message}</p>`;
+      }
+    };
+    
+    window.testCloudFunction = async (functionName, data = {}) => {
+      const resultDiv = document.getElementById('test-results');
+      resultDiv.innerHTML += `<p>Testing <strong>${functionName}</strong>...</p>`;
+      
+      try {
+        const fn = httpsCallable(functions, functionName);
+        const result = await fn(data);
+        resultDiv.innerHTML += `<p style="color: green;">✅ ${functionName} SUCCESS<br>Data: ${JSON.stringify(result.data).substring(0, 200)}...</p><hr>`;
+      } catch (error) {
+        resultDiv.innerHTML += `<p style="color: red;">❌ ${functionName} FAILED<br>Error: ${error.message}</p><hr>`;
+      }
+    };
+    
+    window.runAllTests = async () => {
+      const resultDiv = document.getElementById('test-results');
+      resultDiv.innerHTML = '<h3>Running Integration Tests...</h3>';
+      
+      if (!currentUser) {
+        resultDiv.innerHTML += '<p style="color: red;">❌ Please login first!</p>';
+        return;
+      }
+      
+      // Test Teacher Functions
+      await window.testCloudFunction('getTeacherStudents');
+      await window.testCloudFunction('getUserBadges');
+      await window.testCloudFunction('getSightWordProgress');
+      await window.testCloudFunction('getFluencyProgress');
+      await window.testCloudFunction('getComprehensionProgress');
+      
+      resultDiv.innerHTML += '<h3>✅ All tests completed!</h3>';
+    };
+  </script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: #f5f5f5; }
+    .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    h1, h2 { color: #333; }
+    input { display: block; margin: 10px 0; padding: 12px; width: 100%; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box; }
+    button { padding: 12px 24px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 5px; }
+    button:hover { background: #0056b3; }
+    #test-results { margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 5px; border-left: 4px solid #007bff; max-height: 500px; overflow-y: auto; }
+    .instructions { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; }
+    code { background: #f4f4f4; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
+    .feature-list { background: #d4edda; padding: 15px; border-radius: 5px; border-left: 4px solid #28a745; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Teacher Dashboard Integration Test</h1>
+    
+    <div class="instructions">
+      <strong>Instructions:</strong>
+      <ol>
+        <li>Login with your teacher account</li>
+        <li>Click "Run All Tests" to verify Cloud Functions</li>
+        <li>Check that all integrations show ✅ SUCCESS</li>
+      </ol>
+    </div>
+    
+    <h2>Current User</h2>
+    <div id="user-info"><p>Checking...</p></div>
+  </div>
+  
+  <div class="container" id="login-section">
+    <h2>🔑 Login</h2>
+    <input type="email" id="email" placeholder="Email" value="nrgkid@gmail.com">
+    <input type="password" id="password" placeholder="Password" value="">
+    <button onclick="login()">Login</button>
+    <div id="login-error"></div>
+  </div>
+  
+  <div class="container" id="test-section" style="display: none;">
+    <h2>🚀 Run Integration Tests</h2>
+    <button onclick="runAllTests()">Run All Tests</button>
+    <div id="test-results"></div>
+    
+    <h3>Individual Tests</h3>
+    <button onclick="testCloudFunction('getTeacherStudents')">Test getTeacherStudents</button>
+    <button onclick="testCloudFunction('getUserBadges')">Test getUserBadges</button>
+    <button onclick="testCloudFunction('getSightWordProgress')">Test getSightWordProgress</button>
+  </div>
+  
+  <div class="container">
+    <h2>✅ Expected Teacher Features</h2>
+    <div class="feature-list">
+      <h3>Integrated Features (Should Work):</h3>
+      <ul>
+        <li>✅ <strong>Teacher Dashboard</strong> - View students via getTeacherStudents Cloud Function</li>
+        <li>✅ <strong>Student Reports</strong> - Generate PDF reports via Cloud Functions</li>
+        <li>✅ <strong>Messages</strong> - Send messages to students</li>
+        <li>✅ <strong>Level Assignment</strong> - Assign reading levels via Cloud Function</li>
+        <li>✅ <strong>Observation Sheets</strong> - Create observations via Cloud Function</li>
+        <li>✅ <strong>Activities</strong> - All activities integrated with Cloud Functions</li>
+        <li>✅ <strong>Progress Tracking</strong> - Real-time progress from Cloud Functions</li>
+      </ul>
+      
+      <h3>What You Should See:</h3>
+      <ol>
+        <li>Login as teacher</li>
+        <li>Redirected to <code>/dashboard/teacher</code></li>
+        <li>See list of assigned students (or "No students yet" if none assigned)</li>
+        <li>Navigation menu with: Reports, Messages, Level Assignment, Observation Sheets</li>
+        <li>Each page should load data from Cloud Functions (not direct Firestore)</li>
+      </ol>
+    </div>
+  </div>
+  
+  <div class="container">
+    <h2>🔍 Troubleshooting</h2>
+    <p><strong>If features are missing:</strong></p>
+    <ol>
+      <li>Check browser console (F12) for errors</li>
+      <li>Verify you're on <code>/dashboard/teacher</code> not <code>/dashboard/student</code></li>
+      <li>Check that user has <code>role: "teacher"</code> in Firebase Console</li>
+      <li>Ensure students are assigned to teacher in Firestore</li>
+    </ol>
+    
+    <p><strong>Direct Links to Test:</strong></p>
+    <ul>
+      <li><a href="/dashboard/teacher" target="_blank">Teacher Dashboard</a></li>
+      <li><a href="/teacher/reports" target="_blank">Reports Page</a></li>
+      <li><a href="/teacher/level-assignment" target="_blank">Level Assignment</a></li>
+      <li><a href="/teacher/observation-sheets" target="_blank">Observation Sheets</a></li>
+    </ul>
+  </div>
+</body>
+</html>
