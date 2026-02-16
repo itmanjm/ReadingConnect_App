@@ -23,11 +23,15 @@ interface AuthState {
   profile: Profile | null
   loading: boolean
   authError: string | null
+  uid: string | null
   setUser: (user: FirebaseUser | null) => void
   setProfile: (profile: Profile | null) => void
   setLoading: (loading: boolean) => void
   setAuthError: (error: string | null) => void
-  uid: string | null
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>
+  signInWithGoogle: () => Promise<{ error: string | null }>
+  signUp: (email: string, password: string, displayName: string, role: UserRole) => Promise<{ error: string | null }>
+  signOut: () => Promise<void>
 }
 
 const DEFAULT_ROLE: UserRole = 'student'

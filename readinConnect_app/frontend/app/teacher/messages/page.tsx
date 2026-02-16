@@ -17,7 +17,7 @@ interface Student {
 
 export default function TeacherMessages() {
   const router = useRouter()
-  const user = useAuthStore()
+  const user = useAuthStore((state) => state.user)
   const { data: studentsData, isLoading } = useTeacherStudents()
   const students = studentsData?.students || []
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
