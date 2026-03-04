@@ -1,0 +1,389 @@
+{
+  "s": {
+    "text": "ssss",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 1,
+    "action": "Weave hand in an S shape, like a snake, and say sssss",
+    "exampleWord": "snake",
+    "symbol": "s"
+  },
+  "a": {
+    "text": "a as in apple",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 1,
+    "action": "Wiggle fingers above elbow as if ants crawling on arm, say a, a, a",
+    "exampleWord": "apple",
+    "symbol": "a"
+  },
+  "t": {
+    "text": "t as in tennis",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 1,
+    "action": "Turn head from side to side as if watching tennis, say tuh, tuh, tuh",
+    "exampleWord": "tennis",
+    "symbol": "t"
+  },
+  "p": {
+    "text": "p as in puff",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 1,
+    "action": "Pretend to puff out candles, puffing sound, say puh, puh, puh",
+    "exampleWord": "puff",
+    "symbol": "p"
+  },
+  "i": {
+    "text": "i as in insect",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 1,
+    "action": "Pretend to be mice, wiggle fingers on whiskers, say ih, ih, ih",
+    "exampleWord": "insect",
+    "symbol": "i"
+  },
+  "n": {
+    "text": "nnn",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 1,
+    "action": "Hold arms out and pretend to be a plane, nnnnn",
+    "exampleWord": "net",
+    "symbol": "n"
+  },
+  "c": {
+    "text": "c as in castanet",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 2,
+    "action": "Click fingers like castanets, kuh, kuh, kuh",
+    "exampleWord": "castanet",
+    "symbol": "c"
+  },
+  "k": {
+    "text": "k as in kite",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 2,
+    "action": "Same as C, click fingers like castanets",
+    "exampleWord": "kite",
+    "symbol": "k"
+  },
+  "e": {
+    "text": "e as in egg",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 2,
+    "action": "Pretend to crack an egg, say e as in egg",
+    "exampleWord": "egg",
+    "symbol": "e"
+  },
+  "h": {
+    "text": "h as in hat",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 2,
+    "action": "Pant like a dog, huffing sound, huh, huh, huh",
+    "exampleWord": "hat",
+    "symbol": "h"
+  },
+  "r": {
+    "text": "rrr",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 2,
+    "action": "Pretend to be a dog, pull hands like on a rope, rrrr",
+    "exampleWord": "rat",
+    "symbol": "r"
+  },
+  "m": {
+    "text": "mmm",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 2,
+    "action": "Rub tummy as if tasty, mmmmmm",
+    "exampleWord": "map",
+    "symbol": "m"
+  },
+  "d": {
+    "text": "d as in drum",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 2,
+    "action": "Pretend to beat a drum, duh, duh, duh",
+    "exampleWord": "drum",
+    "symbol": "d"
+  },
+  "g": {
+    "text": "g as in gurgle",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 3,
+    "action": "Spiral hand down like water going down drain, guh, guh, guh",
+    "exampleWord": "goat",
+    "symbol": "g"
+  },
+  "o": {
+    "text": "o as in orange",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 3,
+    "action": "Pretend to turn light switch on and off, o as in orange",
+    "exampleWord": "orange",
+    "symbol": "o"
+  },
+  "u": {
+    "text": "u as in umbrella",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 3,
+    "action": "Pretend to put up an umbrella, uh, uh, uh",
+    "exampleWord": "umbrella",
+    "symbol": "u"
+  },
+  "l": {
+    "text": "lll",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 3,
+    "action": "Pretend to lick a lollipop, lllll",
+    "exampleWord": "log",
+    "symbol": "l"
+  },
+  "f": {
+    "text": "fff",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 3,
+    "action": "Blow on hand like blowing bubbles, fffff",
+    "exampleWord": "fan",
+    "symbol": "f"
+  },
+  "b": {
+    "text": "b as in ball",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 3,
+    "action": "Pretend to hit a ball with a bat, buh, buh, buh",
+    "exampleWord": "ball",
+    "symbol": "b"
+  },
+  "ai": {
+    "text": "ai as in rain",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 4,
+    "action": "Cup hand over ear and say ai",
+    "exampleWord": "rain",
+    "symbol": "ai"
+  },
+  "j": {
+    "text": "j as in jelly",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 4,
+    "action": "Pretend to be a jack-in-the-box, juh, juh, juh",
+    "exampleWord": "jelly",
+    "symbol": "j"
+  },
+  "oa": {
+    "text": "oa as in boat",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 4,
+    "action": "Bring hand over mouth as if something wrong, say oh",
+    "exampleWord": "boat",
+    "symbol": "oa"
+  },
+  "ie": {
+    "text": "ie as in pie",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 4,
+    "action": "Stand to attention and salute, saying ie",
+    "exampleWord": "pie",
+    "symbol": "ie"
+  },
+  "ee": {
+    "text": "ee as in tree",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 4,
+    "action": "Put hands on head as if donkey ears, say ee",
+    "exampleWord": "tree",
+    "symbol": "ee"
+  },
+  "or": {
+    "text": "or as in corn",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 4,
+    "action": "Pretend to be a seal, make or sound",
+    "exampleWord": "corn",
+    "symbol": "or"
+  },
+  "z": {
+    "text": "zzz",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 5,
+    "action": "Put arms out at sides and pretend to be a bee, buzzing",
+    "exampleWord": "zip",
+    "symbol": "z"
+  },
+  "w": {
+    "text": "w as in wind",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 5,
+    "action": "Blow on to hand as if wind, say wuh",
+    "exampleWord": "wind",
+    "symbol": "w"
+  },
+  "ng": {
+    "text": "ng as in ring",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 5,
+    "action": "Pretend to be weightlifter, strain and say ng",
+    "exampleWord": "ring",
+    "symbol": "ng"
+  },
+  "v": {
+    "text": "vvv",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 5,
+    "action": "Pretend to be holding steering wheel, make vvv",
+    "exampleWord": "van",
+    "symbol": "v"
+  },
+  "oo_long": {
+    "text": "oo as in moon",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 5,
+    "action": "Point to moon, make oo sound",
+    "exampleWord": "moon",
+    "symbol": "oo"
+  },
+  "oo_short": {
+    "text": "oo as in book",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 5,
+    "action": "Move head as if it's cuckoo clock, make short oo sound",
+    "exampleWord": "book",
+    "symbol": "oo"
+  },
+  "y": {
+    "text": "y as in yoyo",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 6,
+    "action": "Pretend to eat a yogurt, say yuh",
+    "exampleWord": "yoyo",
+    "symbol": "y"
+  },
+  "x": {
+    "text": "x as in box",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 6,
+    "action": "Pretend to take a photo with camera, say ks",
+    "exampleWord": "box",
+    "symbol": "x"
+  },
+  "ch": {
+    "text": "ch as in church",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 6,
+    "action": "Pretend to be a train, chuh, chuh, chuh",
+    "exampleWord": "church",
+    "symbol": "ch"
+  },
+  "sh": {
+    "text": "sh as in ship",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 6,
+    "action": "Put finger to lips like shushing, shhh",
+    "exampleWord": "ship",
+    "symbol": "sh"
+  },
+  "th_unvoiced": {
+    "text": "th as in thumb",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 6,
+    "action": "Pretend to be rude clown, stick out tongue and say th",
+    "exampleWord": "thumb",
+    "symbol": "th"
+  },
+  "th_voiced": {
+    "text": "th as in this",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 6,
+    "action": "Pretend to be duck, make this sound with thumb",
+    "exampleWord": "this",
+    "symbol": "th"
+  },
+  "qu": {
+    "text": "qu as in queen",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "-10%",
+    "jollyPhonicsGroup": 7,
+    "action": "Make a duck's beak with hands and say kwuh",
+    "exampleWord": "queen",
+    "symbol": "qu"
+  },
+  "ou": {
+    "text": "ou as in out",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 7,
+    "action": "Cup hands around mouth and shout ou as in out",
+    "exampleWord": "out",
+    "symbol": "ou"
+  },
+  "oi": {
+    "text": "oi as in coin",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 7,
+    "action": "Pretend to have pain, say oi",
+    "exampleWord": "coin",
+    "symbol": "oi"
+  },
+  "ue": {
+    "text": "ue as in blue",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 7,
+    "action": "Point to colored sky, say ue",
+    "exampleWord": "blue",
+    "symbol": "ue"
+  },
+  "er": {
+    "text": "er as in her",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 7,
+    "action": "Roll hand over arm like mixer, say er",
+    "exampleWord": "her",
+    "symbol": "er"
+  },
+  "ar": {
+    "text": "ar as in car",
+    "voice": "en-GB-LibbyNeural",
+    "rate": "+0%",
+    "jollyPhonicsGroup": 7,
+    "action": "Pretend to hold scarf around neck, say ar",
+    "exampleWord": "car",
+    "symbol": "ar"
+  }
+}

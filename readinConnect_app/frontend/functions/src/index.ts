@@ -10,3 +10,6 @@ export * from './mastery/checkPhaseUnlock';
 export * from './badges';
 export * from './teachers';
 export * from './teachers/observations';
+export * from './users/onSignup';
+export * from './tts/generateTTS';
+

@@ -10,7 +10,7 @@ import { ConfettiExplosion, StarBurst, CelebrationMessage } from '@/components/C
 import { submitPhonicsAnswer, checkPhaseAccess } from '@/lib/api/activities'
 import { trackActivity } from '@/lib/api/badges'
 import type { PhonicsAnswerResult } from '@/types/activities'
-import { speakPhoneme, getPhonemeInfo as getTTSPhonemeInfo, preloadVoices } from '@/lib/audio/ttsPhonics'
+import { playPhoneme, getPhonemeInfo as getEdgeTTSPhonemeInfo, preloadPhonemes, getAllPhonemes } from '@/lib/audio/edgeTTSPhonics'
 import { useCVCWords, useCVCWordFamilies, CVCWord } from '@/lib/hooks/useCVCWords'
 import { useAuthStore } from '@/lib/stores/auth'
 
@@ -18,7 +18,7 @@ const PHONICS_PHASES = [
   {
     id: 1,
     name: 'Getting Started',
-    phonemes: ['s', 'a_short', 't', 'p', 'i_short', 'n'],
+    phonemes: ['s', 'a', 't', 'p', 'i', 'n'],
     description: 'Most common letters',
     letters: ['S', 'A', 'T', 'P', 'I', 'N'],
     masteryThreshold: 2
@@ -26,67 +26,88 @@ const PHONICS_PHASES = [
   {
     id: 2,
     name: 'Building Words',
-    phonemes: ['m', 'd', 'g', 'o_short', 'k', 'e_short'],
+    phonemes: ['c', 'k', 'e', 'h', 'r', 'm', 'd'],
     description: 'Add consonants to build CVC words',
-    letters: ['M', 'D', 'G', 'O', 'K', 'E'],
+    letters: ['C', 'K', 'E', 'H', 'R', 'M', 'D'],
     masteryThreshold: 2
   },
   {
     id: 3,
     name: 'Word Families',
-    phonemes: ['r', 'b', 'f', 'l', 'h', 'u_short'],
+    phonemes: ['g', 'o', 'u', 'l', 'f', 'b'],
     description: 'Learn word family patterns',
-    letters: ['R', 'B', 'F', 'L', 'H', 'U'],
+    letters: ['G', 'O', 'U', 'L', 'F', 'B'],
     masteryThreshold: 3
   },
   {
     id: 4,
-    name: 'Blends & Digraphs',
-    phonemes: ['ch', 'sh', 'th_unvoiced', 'th_voiced', 'ng', 'wh'],
+    name: 'Vowel Teams',
+    phonemes: ['ai', 'ee', 'ie', 'oa', 'or', 'j'],
     description: 'Advanced letter combinations',
-    letters: ['CH', 'SH', 'TH', 'NG', 'WH'],
+    letters: ['AI', 'EE', 'IE', 'OA', 'OR', 'J'],
     masteryThreshold: 4
   },
   {
     id: 5,
-    name: 'Long Vowels',
-    phonemes: ['a_long', 'e_long', 'i_long', 'o_long', 'u_long'],
-    description: 'Learn long vowel sounds',
-    letters: ['A', 'E', 'I', 'O', 'U'],
-    masteryThreshold: 3
+    name: 'Advanced Phonemes',
+    phonemes: ['z', 'w', 'ng', 'v', 'oo_long', 'oo_short', 'y', 'x', 'ch', 'sh', 'th_unvoiced', 'th_voiced'],
+    description: 'More complex sounds',
+    letters: ['Z', 'W', 'NG', 'V', 'OO', 'Y', 'X', 'CH', 'SH', 'TH'],
+    masteryThreshold: 4
   },
   {
     id: 6,
     name: 'All Letters',
-    phonemes: [],
+    phonemes: ['qu', 'ou', 'oi', 'ue', 'er', 'ar'],
     description: 'Practice the full alphabet',
-    letters: [],
+    letters: ['QU', 'OU', 'OI', 'UE', 'ER', 'AR'],
     masteryThreshold: 5
   }
 ]
 
 const EXAMPLE_WORDS: Record<string, { word: string; uses: string[] }> = {
-  'S': { word: 'Sun', uses: ['snake', 'seven', 'see'] },
-  'A': { word: 'Cat', uses: ['hat', 'mat', 'bat'] },
-  'T': { word: 'Top', uses: ['pot', 'hot', 'cot'] },
-  'P': { word: 'Pan', uses: ['cat', 'hat', 'map'] },
-  'I': { word: 'Pig', uses: ['dig', 'big', 'sit'] },
-  'N': { word: 'Net', uses: ['nap', 'not', 'hot'] },
-  'M': { word: 'Map', uses: ['hat', 'cat', 'bat'] },
-  'D': { word: 'Dog', uses: ['log', 'fog', 'dot'] },
-  'G': { word: 'Goat', uses: ['got', 'log', 'bag'] },
-  'O': { word: 'Fox', uses: ['hot', 'pot', 'dog'] },
-  'B': { word: 'Bus', uses: ['bat', 'sun', 'cup'] },
-  'F': { word: 'Fan', uses: ['fat', 'fun', 'pan'] },
-  'L': { word: 'Log', uses: ['hat', 'cat', 'dog'] },
-  'H': { word: 'Hat', uses: ['hot', 'cat', 'bag'] },
-  'R': { word: 'Rat', uses: ['hat', 'cat', 'bat'] },
-  'U': { word: 'Cup', uses: ['fun', 'run', 'sun'] },
-  'CH': { word: 'Chip', uses: ['chat', 'chin', 'chop'] },
+  'S': { word: 'Snake', uses: ['seven', 'see', 'sand'] },
+  'A': { word: 'Apple', uses: ['hat', 'mat', 'cat'] },
+  'T': { word: 'Tennis', uses: ['pot', 'hot', 'cot'] },
+  'P': { word: 'Puff', uses: ['pan', 'pig', 'pen'] },
+  'I': { word: 'Insect', uses: ['pig', 'dig', 'big'] },
+  'N': { word: 'Net', uses: ['nap', 'not', 'nut'] },
+  'C': { word: 'Castanet', uses: ['cat', 'cot', 'cup'] },
+  'K': { word: 'Kite', uses: ['kit', 'kin', 'key'] },
+  'E': { word: 'Egg', uses: ['net', 'met', 'set'] },
+  'H': { word: 'Hat', uses: ['hot', 'hit', 'hut'] },
+  'R': { word: 'Rat', uses: ['run', 'red', 'rug'] },
+  'M': { word: 'Map', uses: ['man', 'met', 'mat'] },
+  'D': { word: 'Drum', uses: ['dog', 'dig', 'dad'] },
+  'G': { word: 'Goat', uses: ['got', 'gap', 'get'] },
+  'O': { word: 'Orange', uses: ['pot', 'hot', 'cot'] },
+  'U': { word: 'Umbrella', uses: ['up', 'us', 'ug'] },
+  'L': { word: 'Log', uses: ['let', 'lot', 'lap'] },
+  'F': { word: 'Fan', uses: ['fat', 'fun', 'fit'] },
+  'B': { word: 'Ball', uses: ['bat', 'bed', 'bag'] },
+  'AI': { word: 'Rain', uses: ['pain', 'main', 'tail'] },
+  'EE': { word: 'Tree', uses: ['see', 'bee', 'free'] },
+  'IE': { word: 'Pie', uses: ['tie', 'lie', 'die'] },
+  'OA': { word: 'Boat', uses: ['coat', 'goat', 'road'] },
+  'OR': { word: 'Corn', uses: ['fork', 'horn', 'born'] },
+  'J': { word: 'Jelly', uses: ['jet', 'jar', 'jam'] },
+  'Z': { word: 'Zip', uses: ['zoo', 'zebra', 'zero'] },
+  'W': { word: 'Wind', uses: ['wet', 'win', 'web'] },
+  'NG': { word: 'Ring', uses: ['sing', 'long', 'bang'] },
+  'V': { word: 'Van', uses: ['vet', 'vat', 'vase'] },
+  'OO': { word: 'Moon/Book', uses: ['soon', 'food', 'look', 'cook'] },
+  'Y': { word: 'Yoyo', uses: ['yes', 'you', 'yard'] },
+  'X': { word: 'Box', uses: ['fox', 'mix', 'fix'] },
+  'CH': { word: 'Church', uses: ['chip', 'chat', 'chop'] },
   'SH': { word: 'Ship', uses: ['sheep', 'shoe', 'shop'] },
-  'TH': { word: 'Three', uses: ['thank', 'think', 'both'] },
-  'WH': { word: 'Wheel', uses: ['white', 'when', 'what'] },
-  'NG': { word: 'Song', uses: ['sing', 'long', 'ring'] }
+  'TH': { word: 'Thumb/This', uses: ['thank', 'think', 'that', 'this'] },
+  'QU': { word: 'Queen', uses: ['quit', 'quiz', 'quick'] },
+  'OU': { word: 'Out', uses: ['house', 'mouse', 'mouth'] },
+  'OI': { word: 'Coin', uses: ['boil', 'soil', 'oil'] },
+  'UE': { word: 'Blue', uses: ['true', 'due', 'glue'] },
+  'ER': { word: 'Her', uses: ['term', 'fern', 'herb'] },
+  'AR': { word: 'Car', uses: ['star', 'far', 'bar']
+  }
 }
 
 export default function PhonicsLetterHunt() {
@@ -97,7 +118,8 @@ export default function PhonicsLetterHunt() {
   const { families: wordFamilies, loading: familiesLoading } = useCVCWordFamilies('kindergarten')
 
   useEffect(() => {
-    preloadVoices()
+    // Preload all phonemes for faster playback
+    preloadPhonemes(getAllPhonemes())
   }, [])
 
   const [currentPhase, setCurrentPhase] = useState(1)
@@ -175,7 +197,7 @@ export default function PhonicsLetterHunt() {
     const randomPhoneme = availablePhonemes[Math.floor(Math.random() * availablePhonemes.length)]
     setTargetPhoneme(randomPhoneme)
 
-    const phonemeInfo = getTTSPhonemeInfo(randomPhoneme)
+    const phonemeInfo = getEdgeTTSPhonemeInfo(randomPhoneme)
     const letter = phonemeInfo?.symbol?.toUpperCase() || randomPhoneme.toUpperCase()
     setTargetLetter(letter)
 
@@ -404,9 +426,9 @@ export default function PhonicsLetterHunt() {
                     <button
                       onClick={() => {
                         if (!isMuted) {
-                          const phonemeInfo = getTTSPhonemeInfo(targetPhoneme)
+                          const phonemeInfo = getEdgeTTSPhonemeInfo(targetPhoneme)
                           if (phonemeInfo) {
-                            speakPhoneme(targetPhoneme)
+                            playPhoneme(targetPhoneme)
                           }
                         }
                       }}
@@ -490,7 +512,7 @@ export default function PhonicsLetterHunt() {
                   {targetLetter}
                 </div>
                  <p className="text-2xl text-[#8B7355]">
-                  Great job! You found the <strong>{getTTSPhonemeInfo(targetPhoneme)?.symbol || targetLetter}</strong> sound!
+                  Great job! You found the <strong>{getEdgeTTSPhonemeInfo(targetPhoneme)?.symbol || targetLetter}</strong> sound!
                 </p>
                 <Button
                   onClick={() => { playClick(); startGame(); }}

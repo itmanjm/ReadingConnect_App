@@ -1,5 +1,5 @@
-import { initializeApp } from 'firebase/app'
-import { getAuth, setPersistence, inMemoryPersistence } from 'firebase/auth'
+import { initializeApp, getApps, getApp } from 'firebase/app'
+import { getAuth, setPersistence, browserLocalPersistence } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 
 const firebaseConfig = {
@@ -12,16 +12,14 @@ const firebaseConfig = {
   measurementId: "G-L3B7M9ZZMG"
 }
 
-console.log('Firebase Config:', firebaseConfig)
-
-export const app = initializeApp(firebaseConfig)
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
 export const auth = getAuth(app)
 export const db = getFirestore(app)
 
-setPersistence(auth, inMemoryPersistence)
+setPersistence(auth, browserLocalPersistence)
 auth.useDeviceLanguage()
 
-console.log('Auth: Firebase initialized with inMemoryPersistence')
+console.log('Firebase initialized with browserLocalPersistence')
 
 export async function checkPersistence() {
   console.log('Auth: Checking Firebase auth settings...')

@@ -1,12 +1,12 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { validateAuth, validateInput } from '../utils/validation';
+import { onCallWithCors } from '../utils/cors';
 
-export const getTeacherStudents = functions.https.onCall(
+export const getTeacherStudents = onCallWithCors(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
     
-    // Get teacher's profile to verify role
     const teacherRef = admin.firestore().doc(`users/${uid}`);
     const teacherDoc = await teacherRef.get();
     
@@ -19,7 +19,6 @@ export const getTeacherStudents = functions.https.onCall(
       throw new functions.https.HttpsError('permission-denied', 'User is not a teacher');
     }
 
-    // Get all students linked to this teacher
     const studentsSnapshot = await admin.firestore()
       .collection('users')
       .where('teacherId', '==', uid)
@@ -30,7 +29,6 @@ export const getTeacherStudents = functions.https.onCall(
       studentsSnapshot.docs.map(async (doc) => {
         const studentData = doc.data();
         
-        // Get student's progress summary
         const progressSummary = await getStudentProgressSummary(doc.id);
         
         return {
@@ -56,14 +54,12 @@ async function getStudentProgressSummary(studentId: string) {
   };
 
   try {
-    // Get phonics progress
     const phonicsDoc = await admin.firestore().doc(`users/${studentId}/progress/phonics`).get();
     if (phonicsDoc.exists) {
       const phonicsData = phonicsDoc.data();
       summary.phonics.currentPhase = phonicsData?.currentPhase || 1;
     }
 
-    // Get sight words progress
     const sightWordsDoc = await admin.firestore().doc(`users/${studentId}/progress/sight-words`).get();
     if (sightWordsDoc.exists) {
       const sightWordsData = sightWordsDoc.data();
@@ -71,7 +67,6 @@ async function getStudentProgressSummary(studentId: string) {
       summary.sightWords.currentLevel = sightWordsData?.currentLevel || 'pre-primer';
     }
 
-    // Get fluency progress
     const fluencyDoc = await admin.firestore().doc(`users/${studentId}/progress/fluency`).get();
     if (fluencyDoc.exists) {
       const fluencyData = fluencyDoc.data();
@@ -79,7 +74,6 @@ async function getStudentProgressSummary(studentId: string) {
       summary.fluency.currentAccuracy = fluencyData?.currentAccuracy || 0;
     }
 
-    // Get comprehension progress
     const comprehensionDoc = await admin.firestore().doc(`users/${studentId}/progress/comprehension`).get();
     if (comprehensionDoc.exists) {
       const comprehensionData = comprehensionDoc.data();
@@ -87,13 +81,11 @@ async function getStudentProgressSummary(studentId: string) {
       summary.comprehension.overallAccuracy = comprehensionData?.overallAccuracy || 0;
     }
 
-    // Get badges count
     const badgesSnapshot = await admin.firestore()
       .collection(`users/${studentId}/earned_badges`)
       .get();
     summary.badges = badgesSnapshot.size;
 
-    // Get total points
     const userDoc = await admin.firestore().doc(`users/${studentId}`).get();
     if (userDoc.exists) {
       const userData = userDoc.data();
@@ -107,7 +99,7 @@ async function getStudentProgressSummary(studentId: string) {
   return summary;
 }
 
-export const getStudentDetailedProgress = functions.https.onCall(
+export const getStudentDetailedProgress = onCallWithCors(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
     
@@ -115,7 +107,6 @@ export const getStudentDetailedProgress = functions.https.onCall(
       studentId: 'string'
     });
 
-    // Verify teacher has access to this student
     const teacherRef = admin.firestore().doc(`users/${uid}`);
     const teacherDoc = await teacherRef.get();
     
@@ -123,7 +114,6 @@ export const getStudentDetailedProgress = functions.https.onCall(
       throw new functions.https.HttpsError('permission-denied', 'Not authorized');
     }
 
-    // Get student info
     const studentRef = admin.firestore().doc(`users/${studentId}`);
     const studentDoc = await studentRef.get();
     
@@ -136,10 +126,8 @@ export const getStudentDetailedProgress = functions.https.onCall(
       throw new functions.https.HttpsError('permission-denied', 'Student not assigned to this teacher');
     }
 
-    // Get detailed progress for all activities
     const progress = await getStudentProgressSummary(studentId);
     
-    // Get recent activity sessions
     const recentActivity = await getRecentActivity(studentId);
 
     return {
@@ -157,7 +145,6 @@ async function getRecentActivity(studentId: string, limitCount: number = 10) {
   const activities: any[] = [];
 
   try {
-    // Get recent phonics activity
     const phonicsDoc = await admin.firestore().doc(`users/${studentId}/progress/phonics`).get();
     if (phonicsDoc.exists) {
       const phonicsData = phonicsDoc.data();
@@ -170,7 +157,6 @@ async function getRecentActivity(studentId: string, limitCount: number = 10) {
       }
     }
 
-    // Get recent sight words activity
     const sightWordsDoc = await admin.firestore().doc(`users/${studentId}/progress/sight-words`).get();
     if (sightWordsDoc.exists) {
       const sightWordsData = sightWordsDoc.data();
@@ -183,7 +169,6 @@ async function getRecentActivity(studentId: string, limitCount: number = 10) {
       }
     }
 
-    // Get recent fluency sessions
     const fluencyDoc = await admin.firestore().doc(`users/${studentId}/progress/fluency`).get();
     if (fluencyDoc.exists) {
       const fluencyData = fluencyDoc.data();
@@ -200,7 +185,6 @@ async function getRecentActivity(studentId: string, limitCount: number = 10) {
       }
     }
 
-    // Get recent comprehension activity
     const comprehensionDoc = await admin.firestore().doc(`users/${studentId}/progress/comprehension`).get();
     if (comprehensionDoc.exists) {
       const comprehensionData = comprehensionDoc.data();
@@ -217,7 +201,6 @@ async function getRecentActivity(studentId: string, limitCount: number = 10) {
       }
     }
 
-    // Sort by timestamp descending
     activities.sort((a, b) => {
       const timeA = a.timestamp?.toMillis?.() || 0;
       const timeB = b.timestamp?.toMillis?.() || 0;
@@ -232,7 +215,7 @@ async function getRecentActivity(studentId: string, limitCount: number = 10) {
   }
 }
 
-export const assignStudentToTeacher = functions.https.onCall(
+export const assignStudentToTeacher = onCallWithCors(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
     
@@ -240,7 +223,6 @@ export const assignStudentToTeacher = functions.https.onCall(
       studentEmail: 'string'
     });
 
-    // Verify user is a teacher
     const teacherRef = admin.firestore().doc(`users/${uid}`);
     const teacherDoc = await teacherRef.get();
     
@@ -248,7 +230,6 @@ export const assignStudentToTeacher = functions.https.onCall(
       throw new functions.https.HttpsError('permission-denied', 'Not authorized');
     }
 
-    // Find student by email
     const studentsSnapshot = await admin.firestore()
       .collection('users')
       .where('email', '==', studentEmail)
@@ -262,7 +243,6 @@ export const assignStudentToTeacher = functions.https.onCall(
     const studentDoc = studentsSnapshot.docs[0];
     const studentId = studentDoc.id;
 
-    // Update student with teacher assignment
     await admin.firestore().doc(`users/${studentId}`).update({
       teacherId: uid,
       assignedAt: admin.firestore.FieldValue.serverTimestamp()
@@ -273,5 +253,208 @@ export const assignStudentToTeacher = functions.https.onCall(
       studentId,
       studentEmail
     };
+  }
+);
+
+export const createAssignment = onCallWithCors(
+  async (data: any, context: any) => {
+    const uid = validateAuth(context);
+    
+    const teacherDoc = await admin.firestore().doc(`users/${uid}`).get();
+    if (!teacherDoc.exists || teacherDoc.data()?.role !== 'teacher') {
+      throw new functions.https.HttpsError('permission-denied', 'Not authorized');
+    }
+    
+    const { title, description, games, targetStudentIds, dueDate, settings } = data;
+    
+    const assignmentRef = admin.firestore().collection('assignments').doc();
+    const assignment = {
+      id: assignmentRef.id,
+      teacherId: uid,
+      title,
+      description: description || '',
+      games,
+      targetStudentIds,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      settings: settings || { sequentialUnlock: false, allowReplay: true },
+      status: 'active',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    await assignmentRef.set(assignment);
+    
+    const batch = admin.firestore().batch();
+    
+    for (const studentId of targetStudentIds) {
+      const studentAssignmentRef = admin.firestore().collection('studentAssignments').doc();
+      const studentAssignment = {
+        id: studentAssignmentRef.id,
+        studentId,
+        assignmentId: assignmentRef.id,
+        teacherId: uid,
+        status: 'not_started',
+        progress: {
+          totalGames: games.length,
+          completedGames: 0,
+          currentGameIndex: 0,
+          percentComplete: 0
+        },
+        gameProgress: games.reduce((acc: any, game: any, index: number) => {
+          acc[game.gameId] = {
+            status: index === 0 ? 'available' : 'locked',
+            score: 0,
+            accuracy: 0,
+            attempts: 0,
+            timeSpentSeconds: 0
+          };
+          return acc;
+        }, {}),
+        assignedAt: admin.firestore.FieldValue.serverTimestamp()
+      };
+      
+      batch.set(studentAssignmentRef, studentAssignment);
+    }
+    
+    await batch.commit();
+    
+    return { success: true, assignmentId: assignmentRef.id };
+  }
+);
+
+export const getTeacherAssignments = onCallWithCors(
+  async (data: any, context: any) => {
+    const uid = validateAuth(context);
+    
+    const teacherDoc = await admin.firestore().doc(`users/${uid}`).get();
+    if (!teacherDoc.exists || teacherDoc.data()?.role !== 'teacher') {
+      throw new functions.https.HttpsError('permission-denied', 'Not authorized');
+    }
+    
+    const assignmentsSnapshot = await admin.firestore()
+      .collection('assignments')
+      .where('teacherId', '==', uid)
+      .orderBy('createdAt', 'desc')
+      .get();
+    
+    const assignments = await Promise.all(
+      assignmentsSnapshot.docs.map(async (doc) => {
+        const assignmentData = doc.data();
+        
+        const studentAssignmentsSnapshot = await admin.firestore()
+          .collection('studentAssignments')
+          .where('assignmentId', '==', doc.id)
+          .get();
+        
+        const studentProgress = studentAssignmentsSnapshot.docs.map(sa => ({
+          studentId: sa.data().studentId,
+          status: sa.data().status,
+          progress: sa.data().progress
+        }));
+        
+        return {
+          id: doc.id,
+          ...assignmentData,
+          studentProgress
+        };
+      })
+    );
+    
+    return { assignments };
+  }
+);
+
+export const getStudentAssignments = onCallWithCors(
+  async (data: any, context: any) => {
+    const uid = validateAuth(context);
+    
+    const studentAssignmentsSnapshot = await admin.firestore()
+      .collection('studentAssignments')
+      .where('studentId', '==', uid)
+      .where('status', 'in', ['not_started', 'in_progress'])
+      .get();
+    
+    const assignments = await Promise.all(
+      studentAssignmentsSnapshot.docs.map(async (doc) => {
+        const saData = doc.data();
+        
+        const assignmentDoc = await admin.firestore()
+          .collection('assignments')
+          .doc(saData.assignmentId)
+          .get();
+        
+        if (!assignmentDoc.exists) return null;
+        
+        return {
+          studentAssignmentId: doc.id,
+          ...saData,
+          assignment: assignmentDoc.data()
+        };
+      })
+    );
+    
+    return { assignments: assignments.filter(a => a !== null) };
+  }
+);
+
+export const updateGameProgress = onCallWithCors(
+  async (data: any, context: any) => {
+    const uid = validateAuth(context);
+    
+    const { studentAssignmentId, gameId, score, accuracy, timeSpentSeconds, completed } = data;
+    
+    const saRef = admin.firestore().collection('studentAssignments').doc(studentAssignmentId);
+    const saDoc = await saRef.get();
+    
+    if (!saDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Assignment not found');
+    }
+    
+    const saData = saDoc.data();
+    if (saData?.studentId !== uid) {
+      throw new functions.https.HttpsError('permission-denied', 'Not authorized');
+    }
+    
+    const gameProgress = saData?.gameProgress || {};
+    gameProgress[gameId] = {
+      ...gameProgress[gameId],
+      status: completed ? 'completed' : 'in_progress',
+      score,
+      accuracy,
+      timeSpentSeconds: (gameProgress[gameId]?.timeSpentSeconds || 0) + timeSpentSeconds,
+      completedAt: completed ? admin.firestore.FieldValue.serverTimestamp() : null
+    };
+    
+    const totalGames = saData?.progress?.totalGames || 0;
+    const completedGames = Object.values(gameProgress).filter((g: any) => g.status === 'completed').length;
+    const percentComplete = Math.round((completedGames / totalGames) * 100);
+    
+    const assignment = await admin.firestore().collection('assignments').doc(saData?.assignmentId).get();
+    const assignmentData = assignment.data();
+    const currentGameIndex = assignmentData?.games.findIndex((g: any) => g.gameId === gameId);
+    const nextGame = assignmentData?.games[currentGameIndex + 1];
+    
+    if (completed && nextGame && assignmentData?.settings?.sequentialUnlock) {
+      gameProgress[nextGame.gameId].status = 'available';
+    }
+    
+    let status = saData?.status;
+    if (completedGames === 0) status = 'not_started';
+    else if (completedGames === totalGames) status = 'completed';
+    else status = 'in_progress';
+    
+    await saRef.update({
+      gameProgress,
+      status,
+      progress: {
+        totalGames,
+        completedGames,
+        currentGameIndex: currentGameIndex + 1,
+        percentComplete
+      },
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    
+    return { success: true, nextGameId: nextGame?.gameId };
   }
 );

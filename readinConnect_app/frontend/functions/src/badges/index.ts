@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { validateAuth, validateInput } from '../utils/validation';
+import { onCallWithCors } from '../utils/cors';
 
 // Badge definitions
 const BADGE_DEFINITIONS: Record<string, {
@@ -126,10 +127,10 @@ async function awardBadgeInternal(uid: string, badgeId: string): Promise<{ succe
     };
 }
 
-export const awardBadge = functions.https.onCall(
+export const awardBadge = onCallWithCors(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
-    
+
     const { badgeId } = validateInput<{ badgeId: string }>(data, {
       badgeId: 'string'
     });
@@ -167,10 +168,10 @@ async function checkAchievementsInternal(uid: string, activityType: string, metr
   };
 }
 
-export const checkAchievements = functions.https.onCall(
+export const checkAchievements = onCallWithCors(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
-    
+
     const { activityType, metric, value } = validateInput<{
       activityType: string;
       metric: string;
@@ -185,10 +186,10 @@ export const checkAchievements = functions.https.onCall(
   }
 );
 
-export const getUserBadges = functions.https.onCall(
+export const getUserBadges = onCallWithCors(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
-    
+
     const badgesSnapshot = await admin.firestore()
       .collection('users')
       .doc(uid)
@@ -247,10 +248,10 @@ function calculateProgress(userData: any, badgeDef: any): number {
   }
 }
 
-export const trackActivity = functions.https.onCall(
+export const trackActivity = onCallWithCors(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
-    
+
     const { activityType, score, duration } = validateInput<{
       activityType: string;
       score: number;
@@ -262,7 +263,7 @@ export const trackActivity = functions.https.onCall(
     });
 
     const userRef = admin.firestore().doc(`users/${uid}`);
-    
+
     // Update activity count
     await userRef.update({
       totalActivities: admin.firestore.FieldValue.increment(1),

@@ -4,9 +4,12 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   updateProfile,
+  onAuthStateChanged,
   type User as FirebaseUser,
 } from 'firebase/auth'
-import { auth, signInWithPopupGoogle } from '@/lib/firebase/auth'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { auth, db } from '@/lib/firebase/auth'
+import { signInWithPopupGoogle } from '@/lib/firebase/auth'
 
 type UserRole = 'student' | 'teacher' | 'parent' | 'admin'
 
@@ -32,9 +35,39 @@ interface AuthState {
   signInWithGoogle: () => Promise<{ error: string | null }>
   signUp: (email: string, password: string, displayName: string, role: UserRole) => Promise<{ error: string | null }>
   signOut: () => Promise<void>
+  fetchUserProfile: (uid: string) => Promise<Profile | null>
 }
 
 const DEFAULT_ROLE: UserRole = 'student'
+
+const fetchUserProfileFromFirestore = async (uid: string, userEmail?: string | null): Promise<Profile | null> => {
+  try {
+    console.log('fetchUserProfile: Querying Firestore for uid:', uid)
+    const userDoc = await getDoc(doc(db, 'users', uid))
+    if (userDoc.exists()) {
+      const data = userDoc.data()
+      console.log('fetchUserProfile: Found document, role:', data?.role)
+      return {
+        uid: uid,
+        email: data.email || null,
+        displayName: data.displayName || null,
+        role: data.role || DEFAULT_ROLE,
+        photoURL: data.photoURL || null,
+      }
+    }
+    console.log('fetchUserProfile: No document found, returning default student profile')
+    return {
+      uid: uid,
+      email: userEmail || null,
+      displayName: userEmail?.split('@')[0] || null,
+      role: DEFAULT_ROLE,
+      photoURL: null,
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error)
+    return null
+  }
+}
 
 const createProfileFromUser = (user: FirebaseUser | null, role?: UserRole | null): Profile | null => {
   if (!user) return null
@@ -55,15 +88,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   authError: null,
   uid: null,
  
-  setUser: (user) => {
-    const currentProfile = get().profile
-    if (user && !currentProfile) {
-      const profile = createProfileFromUser(user)
-      set({ user, profile, uid: user?.uid || null, authError: null })
-    } else if (!user) {
-      set({ user: null, profile: null, uid: null, authError: null })
+  setUser: async (user) => {
+    if (!user) {
+      set({ user: null, profile: null, uid: null, authError: null, loading: false })
+      return
+    }
+
+    const uid = user.uid
+    const profile = await fetchUserProfileFromFirestore(uid, user.email)
+    
+    if (profile) {
+      console.log('AuthStore: Profile loaded via setUser, role:', profile.role)
+      set({ user, profile, uid, authError: null, loading: false })
     } else {
-      set({ user, uid: user?.uid || null, authError: null })
+      console.warn('AuthStore: No profile found via setUser, using default')
+      const defaultProfile = createProfileFromUser(user)
+      set({ user, profile: defaultProfile, uid, authError: null, loading: false })
     }
   },
 
@@ -84,7 +124,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       console.log('AuthStore: User created, updating profile')
       await updateProfile(userCredential.user, { displayName })
-      
+
+      // Create user profile in Firestore
+      console.log('AuthStore: Creating Firestore profile for user:', userCredential.user.uid)
+      const userProfile = {
+        uid: userCredential.user.uid,
+        email: email,
+        displayName: displayName,
+        role: role,
+        photoURL: userCredential.user.photoURL || null,
+        selectedLevel: null,
+        totalPoints: 0,
+        streakDays: 0,
+        createdAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString(),
+        preferences: {
+          audioEnabled: true,
+          theme: 'default'
+        }
+      }
+
+      await setDoc(doc(db, 'users', userCredential.user.uid), userProfile)
+      console.log('AuthStore: Firestore profile created successfully')
+
       return { error: null }
     } catch (error: any) {
       console.error('AuthStore: Sign up error:', error.code, error.message)
@@ -96,17 +158,38 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signIn: async (email, password) => {
     try {
       console.log('AuthStore: Signing in with email:', email)
-      console.log('AuthStore: Auth object:', auth)
-      console.log('AuthStore: Auth currentUser:', auth.currentUser)
-      console.log('AuthStore: Auth app:', auth.app)
-      console.log('AuthStore: Auth app options:', auth.app.options)
       const userCredential = await signInWithEmailAndPassword(auth, email, password)
 
       if (!userCredential?.user) {
         return { error: 'Failed to sign in' }
       }
 
-      console.log('AuthStore: Sign in successful')
+      const uid = userCredential.user.uid
+      console.log('AuthStore: Sign in successful, user:', userCredential.user.email, 'uid:', uid)
+      
+      const profile = await fetchUserProfileFromFirestore(uid, email)
+      if (profile) {
+        console.log('AuthStore: Profile fetched successfully, role:', profile.role)
+        set({ 
+          user: userCredential.user, 
+          profile, 
+          uid, 
+          authError: null,
+          loading: false 
+        })
+        console.log('AuthStore: State updated with user and profile')
+      } else {
+        console.warn('AuthStore: No profile found in Firestore, using default')
+        const defaultProfile = createProfileFromUser(userCredential.user)
+        set({ 
+          user: userCredential.user, 
+          profile: defaultProfile, 
+          uid, 
+          authError: null,
+          loading: false 
+        })
+      }
+      
       return { error: null }
     } catch (error: any) {
       console.error('AuthStore: Sign in error:', error)
@@ -136,7 +219,46 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { error: errorMessage }
     }
 
-    console.log('AuthStore: Google sign-in completed successfully')
+    if (user) {
+      const uid = user.uid
+      console.log('AuthStore: Google sign-in completed, fetching profile for:', uid)
+
+      const profile = await fetchUserProfileFromFirestore(uid, user.email)
+      if (profile) {
+        console.log('AuthStore: Google profile fetched, role:', profile.role)
+        set({ user, profile, uid, authError: null, loading: false })
+      } else {
+        console.warn('AuthStore: No profile found for Google user, creating new profile')
+        // Create new profile for Google user
+        const userProfile = {
+          uid: user.uid,
+          email: user.email || '',
+          displayName: user.displayName || user.email?.split('@')[0] || '',
+          role: DEFAULT_ROLE,
+          photoURL: user.photoURL || null,
+          selectedLevel: null,
+          totalPoints: 0,
+          streakDays: 0,
+          createdAt: new Date().toISOString(),
+          lastActiveAt: new Date().toISOString(),
+          preferences: {
+            audioEnabled: true,
+            theme: 'default'
+          }
+        }
+
+        try {
+          await setDoc(doc(db, 'users', user.uid), userProfile)
+          console.log('AuthStore: Firestore profile created for Google user')
+        } catch (err) {
+          console.error('AuthStore: Error creating Google user profile:', err)
+        }
+
+        const defaultProfile = createProfileFromUser(user, DEFAULT_ROLE)
+        set({ user, profile: defaultProfile, uid, authError: null, loading: false })
+      }
+    }
+
     return { error: null }
   },
 
@@ -148,5 +270,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       console.error('AuthStore: Sign out error:', error)
     }
+  },
+
+  fetchUserProfile: async (uid: string) => {
+    return fetchUserProfileFromFirestore(uid)
   },
 }))

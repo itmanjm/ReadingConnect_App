@@ -32,16 +32,30 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log('Login: Form submitted with email:', email)
     setError('')
     setLoading(true)
 
-    const { error } = await signIn(email, password)
+    try {
+      console.log('Login: Calling signIn...')
+      const result = await signIn(email, password)
+      console.log('Login: signIn returned:', result)
 
-    if (error) {
-      setError(error)
+      if (result.error) {
+        console.log('Login: Sign in returned error:', result.error)
+        setError(result.error)
+        setLoading(false)
+      } else {
+        console.log('Login: Sign in successful!')
+        setTimeout(() => {
+          console.log('Login: Redirecting to dashboard')
+          router.push('/dashboard')
+        }, 100)
+      }
+    } catch (err: any) {
+      console.error('Login: Unexpected error during sign in:', err)
+      setError(err?.message || 'An unexpected error occurred')
       setLoading(false)
-    } else {
-      router.push('/dashboard')
     }
   }
 

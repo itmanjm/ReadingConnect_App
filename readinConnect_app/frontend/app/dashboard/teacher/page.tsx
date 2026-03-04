@@ -66,44 +66,60 @@ export default function TeacherDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Zap className="h-8 w-8 animate-spin text-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-[#FFF8F0]">
+        <div className="text-center">
+          <span className="text-5xl animate-bounce block mb-4">📚</span>
+          <p className="text-[#5A4A42] font-medium">Loading your classroom...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-[#FFF8F0] relative overflow-hidden">
+      <div className="absolute top-20 right-20 text-5xl animate-bounce">📚</div>
+      <div className="absolute bottom-40 left-10 text-4xl animate-pulse">✏️</div>
+      <div className="absolute top-40 left-20 text-4xl animate-pulse" style={{animationDelay: '1s'}}>🎨</div>
+      <div className="absolute bottom-20 right-20 text-5xl animate-bounce" style={{animationDelay: '0.5s'}}>🍎</div>
+      <div className="absolute top-1/2 right-10 text-3xl animate-pulse" style={{animationDelay: '1.5s'}}>🌟</div>
+      
+      <div className="absolute top-1/4 left-1/4 w-32 h-32 rounded-full bg-[#FF6B6B]/10 blur-2xl" />
+      <div className="absolute bottom-1/3 right-1/4 w-40 h-40 rounded-full bg-[#B8E0D2]/20 blur-2xl" />
+      <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full bg-[#FFB5BA]/15 blur-xl" />
+
+      <nav className="bg-white/90 backdrop-blur-sm border-b-4 border-[#FF6B6B]/20 sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <BookOpen className="h-6 w-6 text-white" />
+            <div className="w-12 h-12 bg-gradient-to-br from-[#FF6B6B] to-[#FFB5BA] rounded-2xl flex items-center justify-center shadow-lg">
+              <BookOpen className="h-7 w-7 text-white" />
             </div>
-            <span className="text-xl font-bold text-gray-800">Teacher Portal</span>
+            <span className="text-2xl font-black bg-gradient-to-r from-[#FF6B6B] to-[#FFB5BA] bg-clip-text text-transparent">
+              Teacher Portal
+            </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-[#5A4A42] font-medium bg-white/80 px-4 py-2 rounded-full shadow-sm">
               {profile?.displayName || user?.email}
             </span>
             <Button
               variant="outline"
               size="sm"
               onClick={handleSignOut}
+              className="rounded-full border-2 border-[#FFB5BA]/50 hover:bg-[#FFB5BA]/10"
             >
-              <LogOut className="h-4 w-4 mr-2" />
+              <LogOut className="h-4 w-4 mr-2 text-[#FF6B6B]" />
               Sign Out
             </Button>
           </div>
         </div>
       </nav>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">
+      <main className="container mx-auto px-4 py-8 relative z-10">
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold text-[#5A4A42] mb-3">
             Welcome, {profile?.displayName?.split(' ')[0] || 'Teacher'}! 👋
           </h1>
-          <p className="text-gray-600 mt-1">Manage your students and track their progress</p>
+          <p className="text-xl text-[#5A4A42]/70">Manage your students and track their progress</p>
         </div>
 
         <div className="grid gap-6 md:grid-cols-4 mb-8">

@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { app } from '@/lib/firebase/auth';
+import { doc, onSnapshot, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,9 +12,6 @@ import { LogOut, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { BadgeCollection } from '@/components/badges/BadgeCollection';
 import { useUserBadges } from '@/lib/hooks/useBadges';
-import { getFirestore, collection } from 'firebase/firestore';
-
-const db = getFirestore(app);
 
 interface StudentProgress {
   words_learned: number;
@@ -301,6 +298,142 @@ export default function StudentDashboard() {
                   </div>
                   <Badge className="bg-[#FFE5B4] text-[#5A4A42] border-0 rounded-full px-4 py-1">
                     Play!
+                  </Badge>
+                </div>
+              </Link>
+
+              <Link href="/activities/word-builder">
+                <div className="flex items-center justify-between p-4 bg-[#FF6B6B]/10 rounded-2xl hover:bg-[#FF6B6B]/20 cursor-pointer transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#FF6B6B] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <span className="text-2xl">🏗️</span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#5A4A42]">Word Builder</p>
+                      <p className="text-sm text-[#8B7355]">Build words with letters!</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-[#FF6B6B] text-white border-0 rounded-full px-4 py-1">
+                    NEW!
+                  </Badge>
+                </div>
+              </Link>
+
+              <Link href="/activities/sound-detective">
+                <div className="flex items-center justify-between p-4 bg-[#4ECDC4]/10 rounded-2xl hover:bg-[#4ECDC4]/20 cursor-pointer transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#4ECDC4] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <span className="text-2xl">🔍</span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#5A4A42]">Sound Detective</p>
+                      <p className="text-sm text-[#8B7355]">Find the sounds!</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-[#4ECDC4] text-white border-0 rounded-full px-4 py-1">
+                    NEW!
+                  </Badge>
+                </div>
+              </Link>
+
+              <Link href="/activities/story-sequencing">
+                <div className="flex items-center justify-between p-4 bg-[#9B59B6]/10 rounded-2xl hover:bg-[#9B59B6]/20 cursor-pointer transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#9B59B6] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <span className="text-2xl">🧩</span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#5A4A42]">Story Time</p>
+                      <p className="text-sm text-[#8B7355]">Put stories in order!</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-[#9B59B6] text-white border-0 rounded-full px-4 py-1">
+                    NEW!
+                  </Badge>
+                </div>
+              </Link>
+
+              <Link href="/activities/reading-racetrack">
+                <div className="flex items-center justify-between p-4 bg-[#E74C3C]/10 rounded-2xl hover:bg-[#E74C3C]/20 cursor-pointer transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#E74C3C] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <span className="text-2xl">🏎️</span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#5A4A42]">Reading Racetrack</p>
+                      <p className="text-sm text-[#8B7355]">Race and read fast!</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-[#E74C3C] text-white border-0 rounded-full px-4 py-1">
+                    NEW!
+                  </Badge>
+                </div>
+              </Link>
+
+              <Link href="/activities/question-quest">
+                <div className="flex items-center justify-between p-4 bg-[#F39C12]/10 rounded-2xl hover:bg-[#F39C12]/20 cursor-pointer transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#F39C12] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <span className="text-2xl">❓</span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#5A4A42]">Question Quest</p>
+                      <p className="text-sm text-[#8B7355]">Answer story questions!</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-[#F39C12] text-white border-0 rounded-full px-4 py-1">
+                    NEW!
+                  </Badge>
+                </div>
+              </Link>
+
+              <Link href="/activities/word-pop">
+                <div className="flex items-center justify-between p-4 bg-[#3498DB]/10 rounded-2xl hover:bg-[#3498DB]/20 cursor-pointer transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#3498DB] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <span className="text-2xl">🎈</span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#5A4A42]">Word Pop</p>
+                      <p className="text-sm text-[#8B7355]">Pop the right words!</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-[#3498DB] text-white border-0 rounded-full px-4 py-1">
+                    NEW!
+                  </Badge>
+                </div>
+              </Link>
+
+              <Link href="/activities/blend-blaster">
+                <div className="flex items-center justify-between p-4 bg-[#E74C3C]/10 rounded-2xl hover:bg-[#E74C3C]/20 cursor-pointer transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#E74C3C] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <span className="text-2xl">🚀</span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#5A4A42]">Blend Blaster</p>
+                      <p className="text-sm text-[#8B7355]">Master consonant blends!</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-[#E74C3C] text-white border-0 rounded-full px-4 py-1">
+                    NEW!
+                  </Badge>
+                </div>
+              </Link>
+
+              <Link href="/activities/magic-e">
+                <div className="flex items-center justify-between p-4 bg-[#9B59B6]/10 rounded-2xl hover:bg-[#9B59B6]/20 cursor-pointer transition-all group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-[#9B59B6] rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <span className="text-2xl">✨</span>
+                    </div>
+                    <div>
+                      <p className="font-bold text-[#5A4A42]">Magic E</p>
+                      <p className="text-sm text-[#8B7355]">Watch words transform!</p>
+                    </div>
+                  </div>
+                  <Badge className="bg-[#9B59B6] text-white border-0 rounded-full px-4 py-1">
+                    NEW!
                   </Badge>
                 </div>
               </Link>

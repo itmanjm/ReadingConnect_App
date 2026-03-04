@@ -9,3 +9,4 @@ dist
 *.firebase-adminsdk*.json
 service-account.json
 firebase-adminsdk-*.json
+create_teacher.js

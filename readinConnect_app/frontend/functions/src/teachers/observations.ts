@@ -1,8 +1,9 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { validateAuth, validateInput } from '../utils/validation';
+import { onCallWithCors } from '../utils/cors';
 
-export const createObservationSheet = functions.https.onCall(
+export const createObservationSheet = onCallWithCors(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
     
@@ -39,7 +40,7 @@ export const createObservationSheet = functions.https.onCall(
   }
 );
 
-export const updateObservationSheet = functions.https.onCall(
+export const updateObservationSheet = onCallWithCors(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
     
@@ -75,7 +76,7 @@ export const updateObservationSheet = functions.https.onCall(
   }
 );
 
-export const getObservationSheets = functions.https.onCall(
+export const getObservationSheets = onCallWithCors(
   async (data: unknown, context: any) => {
     const uid = validateAuth(context);
     

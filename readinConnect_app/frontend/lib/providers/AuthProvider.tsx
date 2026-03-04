@@ -13,6 +13,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
+  const profile = useAuthStore((state) => state.profile)
   const setUser = useAuthStore((state) => state.setUser)
   const setLoading = useAuthStore((state) => state.setLoading)
   const setAuthError = useAuthStore((state) => state.setAuthError)
@@ -39,10 +40,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setInitialized(true)
     }, 3000)
  
-    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
       console.log('AuthProvider: Auth state changed:', authUser?.email || 'No user')
-      setUser(authUser)
-      setLoading(false)
+      
+      if (authUser) {
+        setLoading(true)
+        await setUser(authUser)
+        setLoading(false)
+      } else {
+        await setUser(null)
+        setLoading(false)
+      }
+      
       setInitialized(true)
       setAuthReady(true)
       if (timeoutRef.current) {
@@ -66,14 +75,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [])
  
   useEffect(() => {
-    if (authReady && initialized) {
-      console.log('AuthProvider: User logged in, checking current route', user?.email)
+    if (authReady && initialized && user && profile) {
+      console.log('AuthProvider: User logged in with profile, checking current route', user?.email, 'role:', profile.role)
       const currentPath = window.location.pathname
-      const profile = useAuthStore.getState().profile
       
-      if (user && (currentPath === '/login' || currentPath === '/auth/login' || currentPath === '/auth/register' || currentPath === '/register' || currentPath === '/')) {
-        // Redirect based on user role
-        if (profile?.role === 'teacher') {
+      if (currentPath === '/login' || currentPath === '/auth/login' || currentPath === '/auth/register' || currentPath === '/register' || currentPath === '/') {
+        if (profile.role === 'teacher') {
           console.log('AuthProvider: Redirecting to teacher dashboard')
           router.push('/dashboard/teacher')
         } else {
@@ -82,7 +89,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       }
     }
-  }, [user, initialized, authReady, router])
+  }, [user, profile, initialized, authReady, router])
  
   if (!initialized) {
     return (
